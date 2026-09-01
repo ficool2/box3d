@@ -1505,7 +1505,7 @@ static bool b3HullBuilder_Construct( b3HullBuilder* b, const b3Vec3* points, int
 		return false;
 	}
 
-	int budget = b3ClampInt( maxVertexCount - 4, 0, B3_HULL_MAX_COUNT - 4 );
+	int budget = b3MaxInt( maxVertexCount - 4, 0 );
 
 	b3QHVertex* vertex = b3HullBuilder_NextConflictVertex( b );
 	while ( vertex && budget > 0 )
