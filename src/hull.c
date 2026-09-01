@@ -568,7 +568,6 @@ static void b3NewellPlane( b3QHFace* face )
 	face->area = 0.5f * length;
 }
 
-#if B3_DEBUG
 static bool b3CheckConsistency( const b3QHFace* face )
 {
 	if ( face->mark == B3_MARK_DELETE )
@@ -633,7 +632,6 @@ static bool b3CheckConsistency( const b3QHFace* face )
 
 	return true;
 }
-#endif
 
 static void b3HullBuilder_ComputeTolerance( b3HullBuilder* b, int pointCount, const b3Vec3* points )
 {
@@ -1405,7 +1403,6 @@ static void b3HullBuilder_CleanHull( b3HullBuilder* b, b3Vec3 origin )
 	b->finalFaceCount = faceCount;
 }
 
-#if B3_DEBUG
 static bool b3HullBuilder_IsConsistent( const b3HullBuilder* b )
 {
 	int v = b->finalVertexCount;
@@ -1476,7 +1473,6 @@ static bool b3HullBuilder_IsConsistent( const b3HullBuilder* b )
 
 	return true;
 }
-#endif
 
 static bool b3HullBuilder_HasHull( const b3HullBuilder* b )
 {
