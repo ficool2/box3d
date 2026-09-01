@@ -120,6 +120,9 @@ B3_API float b3GetStallThreshold( void );
 /// The maximum number of convex hull edges. Full edges, not half-edges.
 #define B3_MAX_HULL_EDGES 128
 
+/// The maximum number of vertices in a big hull.
+#define B3_MAX_BIG_HULL_VERTICES 2048
+
 /// Relative tolerance used to determine if two edges are parallel.
 #define B3_PARALLEL_EDGE_TOL 0.005f
 

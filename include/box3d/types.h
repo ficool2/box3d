@@ -2081,6 +2081,40 @@ typedef struct b3BoxHull
 	float nz[8];				 ///< normal z, padded to multiple of 4
 } b3BoxHull;
 
+/// A convex hull that is too large to be a b3HullData.
+/// Useful for offline geometry processing
+typedef struct b3BigHull
+{
+	/// The hull points.
+	b3Vec3* points;
+
+	/// The face planes, one per face, pointing out of the hull.
+	b3Plane* planes;
+
+	/// Where each face's vertex loop starts in faceVertices.
+	/// The final entry holds the total.
+	int32_t* faceOffsets;
+
+	/// Concatenated face loops, indexing points.
+	/// Each loop is wound counter clockWise as seen from outside the hull.
+	int32_t* faceVertices;
+
+	/// The point count.
+	int32_t pointCount;
+
+	/// The face count. Hull faces are convex polygons.
+	int32_t faceCount;
+
+	/// The length of faceVertices.
+	int32_t faceVertexCount;
+
+	/// The total number of bytes for this hull.
+	int32_t byteCount;
+
+	/// Axis-aligned box in local space.
+	b3AABB aabb;
+} b3BigHull;
+
 /**@}*/ // hull
 
 /**

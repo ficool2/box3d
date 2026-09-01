@@ -544,6 +544,80 @@ static int CreateHullDegenerateTest( void )
 	return 0;
 }
 
+static int CreateBigHullTest( void )
+{
+	enum { N = 4096 };
+	static b3Vec3 points[N];
+
+	const uint32_t seeds[] = { 12345u, 1u, 0xdeadbeefu, 0xcafef00du };
+
+	for ( int s = 0; s < ARRAY_COUNT( seeds ); ++s )
+	{
+		FillSphereSample( points, N, seeds[s] );
+
+		// A sphere sample this dense has no hull b3CreateHull can index.
+		b3HullData* small = b3CreateHull( points, N, B3_MAX_HULL_VERTICES );
+		ENSURE( small == NULL );
+
+		b3BigHull* hull = b3CreateBigHull( points, N, B3_MAX_BIG_HULL_VERTICES );
+		ENSURE( hull != NULL );
+		ENSURE( hull->pointCount > B3_MAX_HULL_VERTICES );
+		ENSURE( hull->pointCount <= B3_MAX_BIG_HULL_VERTICES );
+		ENSURE( hull->faceCount >= 4 );
+
+		// Every half-edge is one entry of one face loop, so Euler's identity reads off the loop length.
+		ENSURE( hull->faceOffsets[0] == 0 );
+		ENSURE( hull->faceOffsets[hull->faceCount] == hull->faceVertexCount );
+		ENSURE( hull->pointCount - hull->faceVertexCount / 2 + hull->faceCount == 2 );
+
+		for ( int i = 0; i < hull->faceCount; ++i )
+		{
+			int count = hull->faceOffsets[i + 1] - hull->faceOffsets[i];
+			ENSURE( count >= 3 );
+
+			for ( int j = hull->faceOffsets[i]; j < hull->faceOffsets[i + 1]; ++j )
+			{
+				ENSURE( 0 <= hull->faceVertices[j] && hull->faceVertices[j] < hull->pointCount );
+			}
+		}
+
+		// Every point is on or inside every face plane, and the box holds them all.
+		for ( int i = 0; i < hull->pointCount; ++i )
+		{
+			b3Vec3 p = hull->points[i];
+			ENSURE( p.x >= hull->aabb.lowerBound.x && p.x <= hull->aabb.upperBound.x );
+			ENSURE( p.y >= hull->aabb.lowerBound.y && p.y <= hull->aabb.upperBound.y );
+			ENSURE( p.z >= hull->aabb.lowerBound.z && p.z <= hull->aabb.upperBound.z );
+
+			for ( int f = 0; f < hull->faceCount; ++f )
+			{
+				b3Plane plane = hull->planes[f];
+				ENSURE( b3Dot( plane.normal, p ) - plane.offset < 0.01f );
+			}
+		}
+
+		b3DestroyBigHull( hull );
+	}
+
+	// A cube is a cube, however it is built.
+	b3BigHull* cube = b3CreateBigHull( s_cubeCorners, 8, B3_MAX_BIG_HULL_VERTICES );
+	ENSURE( cube != NULL );
+	ENSURE( cube->pointCount == 8 );
+	ENSURE( cube->faceCount == 6 );
+	ENSURE( cube->faceVertexCount == 24 );
+	b3DestroyBigHull( cube );
+
+	// The degenerate cases are refused, as they are for a solver hull.
+	b3Vec3 collinear[8] = {
+		{ 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 2.0f, 0.0f, 0.0f }, { 3.0f, 0.0f, 0.0f },
+		{ 4.0f, 0.0f, 0.0f }, { 5.0f, 0.0f, 0.0f }, { 6.0f, 0.0f, 0.0f }, { 7.0f, 0.0f, 0.0f },
+	};
+	ENSURE( b3CreateBigHull( collinear, 3, 8 ) == NULL );
+	ENSURE( b3CreateBigHull( collinear, 8, 8 ) == NULL );
+
+	return 0;
+}
+
 int HullTest( void )
 {
 	RUN_SUBTEST( CreateHullCubeTest );
@@ -557,6 +631,7 @@ int HullTest( void )
 	RUN_SUBTEST( CreateHullSphereStressTest );
 	RUN_SUBTEST( CreateHullMergeChurnStressTest );
 	RUN_SUBTEST( CreateHullDegenerateTest );
+	RUN_SUBTEST( CreateBigHullTest );
 	RUN_SUBTEST( TransformedBoxHullTest );
 
 	return 0;

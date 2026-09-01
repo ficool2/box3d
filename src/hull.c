@@ -621,7 +621,7 @@ static bool b3CheckConsistency( const b3QHFace* face )
 			return false;
 		}
 		
-		if ( ++steps > B3_HULL_MAX_COUNT )
+		if ( ++steps > B3_MAX_BIG_HULL_VERTICES )
 		{
 			return false;
 		}
@@ -3004,4 +3004,123 @@ b3BoxHull b3MakeScaledBoxHull( b3Vec3 halfWidths, b3Transform transform, b3Vec3 
 	b3Transform xf = transform;
 	b3ScaleBox( &h, &xf, postScale, 4.0f * B3_LINEAR_SLOP );
 	return b3MakeTransformedBoxHull( h.x, h.y, h.z, xf );
+}
+
+b3BigHull* b3CreateBigHull( const b3Vec3* points, int pointCount, int maxVertexCount )
+{
+	if ( pointCount < 4 )
+	{
+		return NULL;
+	}
+
+	b3Vec3 origin = points[0];
+	int clampedMaxCount = b3ClampInt( maxVertexCount, 4, B3_MAX_BIG_HULL_VERTICES );
+
+	// Single allocation for all working memory.
+	b3HullWorkSizes sizes = b3ComputeHullWorkSizes( pointCount, clampedMaxCount );
+	char* work = b3Alloc( sizes.totalBytes );
+
+	b3HullBuilder builder;
+	b3HullBuilder_Init( &builder, work, &sizes );
+
+	b3Vec3* shiftedPoints = (b3Vec3*)( work + sizes.offsetShiftedPoints );
+
+	bool ok = b3HullBuilder_Construct( &builder, points, pointCount, clampedMaxCount, origin, shiftedPoints );
+	if ( ok == false )
+	{
+		b3Free( work, sizes.totalBytes );
+		return NULL;
+	}
+	
+	if ( builder.finalVertexCount > B3_MAX_BIG_HULL_VERTICES )
+	{
+		b3Log( "big hull final vertex count of %d exceeds limit of %d", builder.finalVertexCount, B3_MAX_BIG_HULL_VERTICES );
+		b3Free( work, sizes.totalBytes );
+		return NULL;
+	}
+
+	int vertexCount = 0;
+	for ( b3QHListNode* node = builder.vertexList.link.next; node != &builder.vertexList.link; node = node->next )
+	{
+		b3QHVertex* vertex = (b3QHVertex*)node;
+		vertex->finalIndex = vertexCount++;
+	}
+
+	int faceCount = builder.finalFaceCount;
+	int faceVertexCount = builder.finalHalfEdgeCount;
+
+	// Allocate the hull.
+	size_t byteCount = b3AlignUp8( sizeof( b3BigHull ) );
+	size_t pointOffset = byteCount;
+	byteCount += b3AlignUp8( (size_t)vertexCount * sizeof( b3Vec3 ) );
+	size_t planeOffset = byteCount;
+	byteCount += b3AlignUp8( (size_t)faceCount * sizeof( b3Plane ) );
+	size_t faceOffsetOffset = byteCount;
+	byteCount += b3AlignUp8( (size_t)( faceCount + 1 ) * sizeof( int32_t ) );
+	size_t faceVertexOffset = byteCount;
+	byteCount += b3AlignUp8( (size_t)faceVertexCount * sizeof( int32_t ) );
+
+	b3BigHull* hull = b3Alloc( byteCount );
+	memset( hull, 0, byteCount );
+
+	hull->points = (b3Vec3*)( (char*)hull + pointOffset );
+	hull->planes = (b3Plane*)( (char*)hull + planeOffset );
+	hull->faceOffsets = (int32_t*)( (char*)hull + faceOffsetOffset );
+	hull->faceVertices = (int32_t*)( (char*)hull + faceVertexOffset );
+	hull->pointCount = vertexCount;
+	hull->faceCount = faceCount;
+	hull->faceVertexCount = faceVertexCount;
+	hull->byteCount = (int32_t)byteCount;
+
+	int index = 0;
+	for ( b3QHListNode* node = builder.vertexList.link.next; node != &builder.vertexList.link; node = node->next )
+	{
+		hull->points[index++] = ( (const b3QHVertex*)node )->position;
+	}
+
+	int faceIndex = 0;
+	int loopIndex = 0;
+	for ( b3QHListNode* faceNode = builder.faceList.link.next; faceNode != &builder.faceList.link; faceNode = faceNode->next )
+	{
+		const b3QHFace* face = (const b3QHFace*)faceNode;
+
+		hull->planes[faceIndex] = face->plane;
+		hull->faceOffsets[faceIndex] = loopIndex;
+		faceIndex += 1;
+
+		const b3QHHalfEdge* edge = face->edge;
+		do
+		{
+			B3_ASSERT( loopIndex < faceVertexCount );
+			hull->faceVertices[loopIndex++] = edge->origin->finalIndex;
+			edge = edge->next;
+		}
+		while ( edge != face->edge );
+	}
+
+	B3_ASSERT( faceIndex == faceCount && loopIndex == faceVertexCount );
+	hull->faceOffsets[faceCount] = loopIndex;
+
+	// All builder pointers are dead from here on.
+	b3Free( work, sizes.totalBytes );
+
+	b3AABB bounds;
+	bounds.lowerBound = hull->points[0];
+	bounds.upperBound = hull->points[0];
+	for ( int i = 1; i < vertexCount; ++i )
+	{
+		bounds.lowerBound = b3Min( bounds.lowerBound, hull->points[i] );
+		bounds.upperBound = b3Max( bounds.upperBound, hull->points[i] );
+	}
+	hull->aabb = bounds;
+
+	return hull;
+}
+
+void b3DestroyBigHull( b3BigHull* hull )
+{
+	if ( hull != NULL )
+	{
+		b3Free( hull, hull->byteCount );
+	}
 }

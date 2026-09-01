@@ -233,6 +233,12 @@ B3_API b3HullData* b3CloneAndTransformHull( const b3HullData* original, b3Transf
 /// Destroy a hull.
 B3_API void b3DestroyHull( b3HullData* hull );
 
+/// Create a convex hull for processing data that exceeds the limits of b3HullData.
+B3_API b3BigHull* b3CreateBigHull( const b3Vec3* points, int pointCount, int maxVertexCount );
+
+/// Destroy a big hull.
+B3_API void b3DestroyBigHull( b3BigHull* hull );
+
 /// Make a cube as a hull. Do not call b3DestroyHull on this.
 B3_API b3BoxHull b3MakeCubeHull( float halfWidth );
 
