@@ -104,6 +104,11 @@ void b3SetLogFcn( b3LogFcn* logFcn )
 	b3LogHandler = logFcn;
 }
 
+b3LogFcn* b3GetLogFcn( void )
+{
+	return b3LogHandler;
+}
+
 void b3Log( const char* format, ... )
 {
 	va_list args;

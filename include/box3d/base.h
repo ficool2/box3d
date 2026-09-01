@@ -151,6 +151,9 @@ B3_API int b3InternalAssert( const char* condition, const char* fileName, int li
 /// Override the default logging callback.
 B3_API void b3SetLogFcn( b3LogFcn* logFcn );
 
+/// Get the current logging callback.
+B3_API b3LogFcn* b3GetLogFcn( void );
+
 /// Version numbering scheme.
 /// See https://semver.org/
 typedef struct b3Version
