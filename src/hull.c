@@ -1083,6 +1083,36 @@ static bool b3HullBuilder_ConnectFaces( b3HullBuilder* b, b3QHHalfEdge* edge )
 
 	face->edge = edgePrev;
 
+	// Ensure that the merge did not create a situation where two faces
+	// are sharing two runs at once (observed with thin faces)
+	b3QHFace* opposingFace = twin->face;
+	
+	for ( b3QHHalfEdge* survivor = edgeNext; ; survivor = survivor->next )
+	{
+		if ( survivor->twin->face == opposingFace )
+		{
+			return false;
+		}
+	
+		if ( survivor == edgePrev )
+		{
+			break;
+		}
+	}
+	
+	for ( b3QHHalfEdge* survivor = twinNext; ; survivor = survivor->next )
+	{
+		if ( survivor->twin->face == face )
+		{
+			return false;
+		}
+	
+		if ( survivor == twinPrev )
+		{
+			break;
+		}
+	}
+
 	// Discard opposing face. mergedFaces is single-buffered: ConnectFaces does not nest.
 	b->mergedFacesCount = 0;
 	B3_ASSERT( b->mergedFacesCount < b->mergedFacesCapacity );
