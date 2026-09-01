@@ -580,6 +580,8 @@ static bool b3CheckConsistency( const b3QHFace* face )
 	{
 		return false;
 	}
+	
+	int steps = 0;
 
 	const b3QHHalfEdge* edge = face->edge;
 
@@ -616,6 +618,11 @@ static bool b3CheckConsistency( const b3QHFace* face )
 			return false;
 		}
 		if ( edge->face != face )
+		{
+			return false;
+		}
+		
+		if ( ++steps > B3_HULL_MAX_COUNT )
 		{
 			return false;
 		}
