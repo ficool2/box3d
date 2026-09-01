@@ -927,7 +927,17 @@ static void b3HullBuilder_ConnectEdges( b3HullBuilder* b, b3QHHalfEdge* prev, b3
 	B3_ASSERT( prev->face == next->face );
 
 	// If both shared neighbors are the same face, prev and next together would orphan that face.
-	if ( prev->twin->face == next->twin->face )
+	// Check both ways to ensure they are truly adjacent
+	bool bCanCollapse = prev->twin->face == next->twin->face && next->twin->next == prev->twin;	
+
+	// Special case for triangle: neighbour is enclosed on all sides,
+	// collapsing it would join this face's boundary and leave an orphaned edge
+	if ( bCanCollapse && b3VertexCountOfFace( prev->twin->face ) == 3 )
+	{
+		bCanCollapse = next->twin->prev->twin->face != prev->face;
+	}
+	
+	if ( bCanCollapse )
 	{
 		// next is redundant.
 		if ( next->face->edge == next )
