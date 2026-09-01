@@ -1465,9 +1465,10 @@ static bool b3HullBuilder_Construct( b3HullBuilder* b, const b3Vec3* points, int
 
 	b3HullBuilder_CleanHull( b, origin );
 
-#if B3_DEBUG
-	B3_ASSERT( b3HullBuilder_IsConsistent( b ) );
-#endif
+	if ( b3HullBuilder_IsConsistent( b ) == false )
+	{
+		return false;
+	}
 
 	return b3HullBuilder_HasHull( b );
 }
