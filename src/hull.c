@@ -1040,7 +1040,7 @@ static void b3HullBuilder_AbsorbFaces( b3HullBuilder* b, b3QHFace* face )
 	}
 }
 
-static void b3HullBuilder_ConnectFaces( b3HullBuilder* b, b3QHHalfEdge* edge )
+static bool b3HullBuilder_ConnectFaces( b3HullBuilder* b, b3QHHalfEdge* edge )
 {
 	b3QHFace* face = edge->face;
 
@@ -1058,6 +1058,11 @@ static void b3HullBuilder_ConnectFaces( b3HullBuilder* b, b3QHHalfEdge* edge )
 
 		edgePrev = edgePrev->prev;
 		twinNext = twinNext->next;
+		
+		if ( edgePrev == edge )
+		{
+			return false;
+		}
 	}
 	B3_ASSERT( edgePrev->face != twinNext->face );
 
@@ -1068,6 +1073,11 @@ static void b3HullBuilder_ConnectFaces( b3HullBuilder* b, b3QHHalfEdge* edge )
 
 		edgeNext = edgeNext->next;
 		twinPrev = twinPrev->prev;
+		
+		if ( edgeNext == edge )
+		{
+			return false;
+		}
 	}
 	B3_ASSERT( edgeNext->face != twinPrev->face );
 
@@ -1112,8 +1122,10 @@ static bool b3HullBuilder_MergeConcave( b3HullBuilder* b, b3QHFace* face )
 
 		if ( b3IsEdgeConcave( edge, b->minRadius ) || b3IsEdgeConcave( twin, b->minRadius ) )
 		{
-			b3HullBuilder_ConnectFaces( b, edge );
-			return true;
+			if ( b3HullBuilder_ConnectFaces( b, edge ) )
+			{
+				return true;
+			}
 		}
 
 		edge = edge->next;
@@ -1133,8 +1145,10 @@ static bool b3HullBuilder_MergeCoplanar( b3HullBuilder* b, b3QHFace* face )
 
 		if ( !b3IsEdgeConvex( edge, b->minRadius ) || !b3IsEdgeConvex( twin, b->minRadius ) )
 		{
-			b3HullBuilder_ConnectFaces( b, edge );
-			return true;
+			if ( b3HullBuilder_ConnectFaces( b, edge ) )
+			{
+				return true;
+			}
 		}
 
 		edge = edge->next;
