@@ -1148,6 +1148,8 @@ static bool b3HullBuilder_ConnectFaces( b3HullBuilder* b, b3QHHalfEdge* edge )
 #endif
 
 	b3HullBuilder_AbsorbFaces( b, face );
+	
+	return true;
 }
 
 static bool b3HullBuilder_MergeConcave( b3HullBuilder* b, b3QHFace* face )
