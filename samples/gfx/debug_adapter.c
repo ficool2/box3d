@@ -122,6 +122,10 @@ typedef struct
 	bool transparentDynamic;
 	bool transparentKinematic;
 
+	// One body drawn with reduced alpha, such as a character the camera is close to
+	b3BodyId alphaBodyId;
+	float bodyAlpha;
+
 	// View box for compound child culling, world space, refreshed once per frame.
 	b3AABB viewBounds;
 	bool hasViewBounds;
@@ -158,6 +162,8 @@ void InitAdapter( void )
 	s_adapter.selectedShapeId = b3_nullShapeId;
 	s_adapter.transparentDynamic = false;
 	s_adapter.transparentKinematic = false;
+	s_adapter.alphaBodyId = b3_nullBodyId;
+	s_adapter.bodyAlpha = 1.0f;
 
 	s_adapter.hasViewBounds = false;
 	s_adapter.lastCompoundAppended = 0;
@@ -197,6 +203,8 @@ void ResetAdapterPool( void )
 	s_adapter.selectedShapeId = b3_nullShapeId;
 	s_adapter.transparentDynamic = false;
 	s_adapter.transparentKinematic = false;
+	s_adapter.alphaBodyId = b3_nullBodyId;
+	s_adapter.bodyAlpha = 1.0f;
 
 	s_adapter.hasViewBounds = false;
 	s_adapter.lastCompoundAppended = 0;
@@ -237,6 +245,12 @@ void SetTransparentDynamic( bool enabled )
 void SetTransparentKinematic( bool enabled )
 {
 	s_adapter.transparentKinematic = enabled;
+}
+
+void SetBodyAlpha( b3BodyId bodyId, float alpha )
+{
+	s_adapter.alphaBodyId = bodyId;
+	s_adapter.bodyAlpha = alpha;
 }
 
 void SetViewBounds( b3AABB bounds )
@@ -793,11 +807,10 @@ typedef struct
 
 // The compound tree stores child indices. Remap to the pool slot the flatten
 // pass assigned, then append the child under the body transform.
-static bool CompoundCullCallback( int proxyId, uint64_t userData, void* context )
+static bool CompoundCullCallback( const b3CompoundData* compound, int childIndex, void* context )
 {
-	(void)proxyId;
+	(void)compound;
 	CompoundCullContext* ctx = (CompoundCullContext*)context;
-	const int childIndex = (int)userData;
 	if ( childIndex < 0 || childIndex >= ctx->parent->compound.childMapCount )
 	{
 		return true;
@@ -863,6 +876,11 @@ static void DrawShape( void* userShape, b3WorldTransform shapeTransform, b3HexCo
 		c.w = BOX3D_TRANSPARENT_ALPHA;
 	}
 
+	if ( s_adapter.bodyAlpha < 1.0f && B3_ID_EQUALS( us->bodyId, s_adapter.alphaBodyId ) )
+	{
+		c.w = b3MinFloat( c.w, s_adapter.bodyAlpha );
+	}
+
 	if ( s_adapter.transparentKinematic && us->bodyType == b3_kinematicBody )
 	{
 		c.w = BOX3D_TRANSPARENT_ALPHA;
@@ -888,7 +906,7 @@ static void DrawShape( void* userShape, b3WorldTransform shapeTransform, b3HexCo
 
 			// If the whole compound sits inside the view the query returns every child,
 			// so walking the list is cheaper. Both boxes are in the draw origin frame.
-			b3AABB rootRel = b3AABB_Transform( shapeRelative, b3DynamicTree_GetRootBounds( &us->compound.data->tree ) );
+			b3AABB rootRel = b3AABB_Transform( shapeRelative, us->compound.data->bounds );
 			if ( b3AABB_Contains( viewRel, rootRel ) )
 			{
 				cull = false;
@@ -901,7 +919,7 @@ static void DrawShape( void* userShape, b3WorldTransform shapeTransform, b3HexCo
 			b3AABB localCull = b3AABB_Transform( b3InvertTransform( shapeRelative ), viewRel );
 
 			CompoundCullContext ctx = { us, shapeRelative, c, metallic, roughness, shadowCast, hk, 0 };
-			b3DynamicTree_Query( &us->compound.data->tree, localCull, ~0ull, false, CompoundCullCallback, &ctx );
+			b3QueryCompound( us->compound.data, localCull, CompoundCullCallback, &ctx );
 
 			s_adapter.lastCompoundAppended += ctx.appended;
 			s_adapter.lastCompoundTotal += us->compound.childMapCount;

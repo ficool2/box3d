@@ -11,6 +11,7 @@
 // Fed from the host event loop; read with the KEY_* aliases in gfx/keycodes.h.
 bool IsKeyDown( int key );
 void SetKeyDown( int key, bool down );
+void ClearKeysDown();
 
 // Key action passed to Keyboard, matching the old GLFW press/release values so
 // sample code reads naturally without leaking sokol_app event types.
@@ -18,6 +19,17 @@ enum
 {
 	ACTION_RELEASE = 0,
 	ACTION_PRESS = 1,
+};
+
+// Character input relative to the camera. Throttle x is forward and y is right.
+struct MoverInput
+{
+	b3Vec3 forward;
+	b3Vec3 right;
+	b3Vec2 throttle;
+	bool jump;
+	bool sprint;
+	bool walk;
 };
 
 struct SampleContext
@@ -50,6 +62,10 @@ struct SampleContext
 	char recordingFile[256] = "recording.b3rec";
 	char replayFile[256] = "";
 
+	// Last recording saved this session, empty until a save succeeds. The default record path
+	// may name a stale file from an earlier run, so Play only trusts this one.
+	char savedRecordingFile[256] = "";
+
 	// Keyframe ring policy the Replay viewer applies on open, persisted across sessions.
 	int replayKeyframeBudgetMB = 512;
 	int replayKeyframeMinInterval = 16;
@@ -57,12 +73,22 @@ struct SampleContext
 	float hertz = 60.0f;
 	float recycleDistance = 0.05f;
 	float drawDistance = 100.0f; // meters, view/cull box half extent, persisted
+
+	// Camera the sample set up on creation. Home returns to it. Fitting the world bounds instead
+	// can put a scene with a large ground plate beyond the draw distance.
+	b3Pos homePivot = {};
+	float homeYaw = 0.0f;
+	float homePitch = 0.0f;
+	float homeRadius = 0.0f;
 	int subStepCount = 4;
+	int restitutionIterations = 2;
 	int workerCount = 1;
 	bool transparentDynamic = false;
 	bool transparentKinematic = false;
 	bool enableWarmStarting = true;
 	bool enableContinuous = true;
+	bool enableRestitutionPropagation = false;
+	bool enableSSE2Fallback = false;
 	bool enableSleep = true;
 	bool pause = false;
 	int singleStep = 0;
@@ -71,9 +97,15 @@ struct SampleContext
 	// UI visibility (Tab / View > Hide UI). When hidden only the minimal HUD shows.
 	bool showUI = true;
 
-	// Bottom diagnostics drawer (M), set by Ctrl+O for the fuzzy picker.
+	// Viewport text: HUD, sample text lines and world labels.
+	bool showText = true;
+
+	// Bottom metrics drawer (M), set by Ctrl+O for the fuzzy picker.
 	bool showMetrics = false;
 	bool openSamplePicker = false;
+
+	// Left profile panel (I)
+	bool showProfile = false;
 
 	// Controls help window (Help > Controls, toggled with ?). Promoted to the
 	// context so the key handler can reach it. Seeded from newUser after Load.
@@ -136,6 +168,12 @@ public:
 		return true;
 	}
 
+	// Allow a sample without a world step to hide the profile panel.
+	virtual bool HasProfile() const
+	{
+		return true;
+	}
+
 	// Width of the right info panel in em. The bottom drawer clears to the same width. A sample that
 	// hosts heavier content there, such as the replay viewer's detail pane, can widen it.
 	virtual float InfoPanelWidthEm() const;
@@ -150,9 +188,9 @@ public:
 	// framing works regardless of where the cursor sits.
 	virtual b3BodyId FocusBody() const;
 
-	// Frame shortcut with nothing selected: fit the whole scene. Defaults to the live world bounds.
-	// The replay viewer overrides this to fit the recording, whose world is player-owned and separate
-	// from the empty base world.
+	// Home, and the frame shortcut with nothing selected. Defaults to the camera the sample set up on
+	// creation. The replay viewer overrides this to fit the recording, whose world is player-owned and
+	// separate from the empty base world.
 	virtual void FocusHome();
 
 	// Arm recording on the live world, snapshotting it as the seed so capture can begin at any
@@ -160,10 +198,15 @@ public:
 	void StartRecording();
 	void FinishRecording();
 
-	// Bottom diagnostics drawer (Profile / Counters / Renderer / Frame Time).
+	// Left profile panel, a table of the step sections readable at a glance.
+	bool IsProfileVisible() const;
+	float GetProfilePanelWidth() const;
+	void DrawProfile();
+
+	// Bottom metrics drawer (Frame Time / Counters / Renderer).
 	void DrawMetrics();
 
-	// Append extra tabs to the diagnostics drawer's tab bar (the Replay viewer adds Timeline).
+	// Append extra tabs to the metrics drawer's tab bar (the Replay viewer adds Timeline).
 	virtual void DrawMetricsTab()
 	{
 	}
@@ -182,6 +225,9 @@ public:
 	virtual void MouseMove( b3Vec2 p );
 
 	void ToggleThirdPerson();
+
+	// WASD, space, shift and ctrl, active only in third person so the free camera keeps its keys.
+	MoverInput GetMoverInput() const;
 
 	B3_PRINTF_FORMAT( 2, 3 )
 	void DrawTextLine( const char* text, ... );
@@ -212,6 +258,7 @@ public:
 	float m_mouseForceScale;
 	float m_launchSpeedScale;
 	int m_stepCount;
+	int m_textX;
 	int m_textLine;
 	int m_textIncrement;
 	int m_triangleIndex;
@@ -271,13 +318,16 @@ int RegisterReplay( const char* category, const char* name, SampleCreateFcn* fcn
 // by leaving the restart flag set while the new sample constructs.
 void SelectSample( SampleContext* context, int selection, bool restart );
 
+// Frame the selection, or go home when nothing is selected
+void FrameSelection( SampleContext* context );
+
 // Run the native "open replay" file picker and, on success, hand the chosen
 // file to the Replay viewer. Must be called outside the frame (the dialog spins
 // a blocking nested run loop), driven by SampleContext::openReplayPicker.
 void OpenReplayFileDialog( SampleContext* context );
 
-// The single host UI callback: menu bar, sample picker, info panel, and the
-// bottom diagnostics drawer.
+// The single host UI callback: menu bar, sample picker, info panel, profile panel,
+// and the bottom metrics drawer.
 void DrawUI( SampleContext* context );
 
 struct CastClosestContext
@@ -294,3 +344,19 @@ struct CastClosestContext
 
 float CastClosestCallback( b3ShapeId shapeId, b3Pos point, b3Vec3 normal, float fraction, uint64_t materialId, int triangleIndex,
 						   int childIndex, void* context );
+
+struct MechanicalEnergy
+{
+	float Total() const
+	{
+		return linear + angular + potential;
+	}
+
+	float linear;
+	float angular;
+	float potential;
+};
+
+// Kinetic and gravitational potential energy summed over the bodies. Restitution samples
+// use the total as the invariant that may only decrease.
+MechanicalEnergy MeasureEnergy( b3WorldId worldId, const b3BodyId* bodyIds, int count );
