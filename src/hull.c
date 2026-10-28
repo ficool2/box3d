@@ -107,6 +107,9 @@ typedef struct b3HullBuilder
 	float minRadius;
 	float minOutside;
 
+	// Set when half-edge mesh is inconsistent (degenerate input)
+	bool failed;
+
 	b3Vec3 interiorPoint;
 
 	// List sentinels. Only the link is meaningful; other fields are unused.
@@ -576,17 +579,21 @@ static bool b3CheckConsistency( const b3QHFace* face )
 		return false;
 	}
 
-	if ( b3VertexCountOfFace( face ) < 3 )
-	{
-		return false;
-	}
-	
 	int steps = 0;
 
 	const b3QHHalfEdge* edge = face->edge;
+	if ( edge == NULL )
+	{
+		return false;
+	}
 
 	do
 	{
+		if ( edge->next == NULL || edge->face != face )
+		{
+			return false;
+		}
+
 		const b3QHHalfEdge* twin = edge->twin;
 
 		if ( twin == NULL )
@@ -605,7 +612,7 @@ static bool b3CheckConsistency( const b3QHFace* face )
 		{
 			return false;
 		}
-		if ( twin->twin != edge )
+		if ( twin->twin != edge || twin->next == NULL )
 		{
 			return false;
 		}
@@ -617,11 +624,6 @@ static bool b3CheckConsistency( const b3QHFace* face )
 		{
 			return false;
 		}
-		if ( edge->face != face )
-		{
-			return false;
-		}
-		
 		if ( ++steps > B3_MAX_BIG_HULL_VERTICES )
 		{
 			return false;
@@ -631,7 +633,7 @@ static bool b3CheckConsistency( const b3QHFace* face )
 	}
 	while ( edge != face->edge );
 
-	return true;
+	return steps >= 3;
 }
 
 static void b3HullBuilder_ComputeTolerance( b3HullBuilder* b, int pointCount, const b3Vec3* points )
@@ -1140,13 +1142,16 @@ static bool b3HullBuilder_ConnectFaces( b3HullBuilder* b, b3QHHalfEdge* edge )
 	b3HullBuilder_ConnectEdges( b, edgePrev, twinNext );
 	b3HullBuilder_ConnectEdges( b, twinPrev, edgeNext );
 
+	if ( b3CheckConsistency( face ) == false )
+	{
+		b->failed = true;
+		return false;
+	}
+
 	b3NewellPlane( face );
 	// Existing conflicts now have stale distances under the new plane; AbsorbFaces will then
 	// add more incrementally and update the cache as it goes.
 	b3HullBuilder_RecacheConflicts( face, b->minOutside );
-#if B3_DEBUG
-	B3_ASSERT( b3CheckConsistency( face ) );
-#endif
 
 	b3HullBuilder_AbsorbFaces( b, face );
 	
@@ -1166,6 +1171,11 @@ static bool b3HullBuilder_MergeConcave( b3HullBuilder* b, b3QHFace* face )
 			if ( b3HullBuilder_ConnectFaces( b, edge ) )
 			{
 				return true;
+			}
+
+			if ( b->failed )
+			{
+				return false;
 			}
 		}
 
@@ -1189,6 +1199,11 @@ static bool b3HullBuilder_MergeCoplanar( b3HullBuilder* b, b3QHFace* face )
 			if ( b3HullBuilder_ConnectFaces( b, edge ) )
 			{
 				return true;
+			}
+
+			if ( b->failed )
+			{
+				return false;
 			}
 		}
 
@@ -1228,6 +1243,10 @@ static void b3HullBuilder_MergeFaces( b3HullBuilder* b )
 
 			B3_ASSERT( bestEdge != NULL );
 			b3HullBuilder_ConnectFaces( b, bestEdge );
+			if ( b->failed )
+			{
+				return;
+			}
 		}
 	}
 
@@ -1239,6 +1258,11 @@ static void b3HullBuilder_MergeFaces( b3HullBuilder* b )
 			while ( b3HullBuilder_MergeConcave( b, face ) )
 			{
 			}
+
+			if ( b->failed )
+			{
+				return;
+			}
 		}
 	}
 
@@ -1249,6 +1273,11 @@ static void b3HullBuilder_MergeFaces( b3HullBuilder* b )
 		{
 			while ( b3HullBuilder_MergeCoplanar( b, face ) )
 			{
+			}
+
+			if ( b->failed )
+			{
+				return;
 			}
 		}
 	}
@@ -1354,6 +1383,11 @@ static void b3HullBuilder_AddVertexToHull( b3HullBuilder* b, b3QHVertex* vertex 
 	B3_ASSERT( b->coneCount >= 3 );
 
 	b3HullBuilder_MergeFaces( b );
+	if ( b->failed )
+	{
+		return;
+	}
+
 	b3HullBuilder_ResolveVertices( b );
 	b3HullBuilder_ResolveFaces( b );
 }
@@ -1512,6 +1546,11 @@ static bool b3HullBuilder_Construct( b3HullBuilder* b, const b3Vec3* points, int
 	while ( vertex && budget > 0 )
 	{
 		b3HullBuilder_AddVertexToHull( b, vertex );
+		if ( b->failed )
+		{
+			return false;
+		}
+
 		vertex = b3HullBuilder_NextConflictVertex( b );
 		budget -= 1;
 	}
