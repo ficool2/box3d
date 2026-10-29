@@ -373,11 +373,22 @@ b3WorldId b3CreateWorld( const b3WorldDef* def )
 		world->userTaskContext = def->userTaskContext;
 		world->scheduler = NULL;
 	}
+	else if ( def->scheduler != NULL )
+	{
+		// Shared built-in scheduler
+		world->workerCount = b3Scheduler_GetWorkerCount( def->scheduler );
+		world->scheduler = def->scheduler;
+		world->ownsScheduler = false;
+		world->enqueueTaskFcn = b3SchedulerEnqueueTask;
+		world->finishTaskFcn = b3SchedulerFinishTask;
+		world->userTaskContext = world->scheduler;
+	}
 	else if ( def->workerCount > 1 )
 	{
 		// Built-in scheduler
 		world->workerCount = b3MinInt( def->workerCount, B3_MAX_WORKERS );
 		world->scheduler = b3CreateScheduler( world->workerCount );
+		world->ownsScheduler = true;
 		world->enqueueTaskFcn = b3SchedulerEnqueueTask;
 		world->finishTaskFcn = b3SchedulerFinishTask;
 		world->userTaskContext = world->scheduler;
@@ -421,7 +432,7 @@ void b3DestroyWorld( b3WorldId worldId )
 	// Detach any recording before teardown. The user owns and frees the recording buffer.
 	b3StopRecordingInternal( world );
 
-	if ( world->scheduler != NULL )
+	if ( world->scheduler != NULL && world->ownsScheduler )
 	{
 		b3DestroyScheduler( world->scheduler );
 		world->scheduler = NULL;
@@ -1073,7 +1084,7 @@ void b3World_Step( b3WorldId worldId, float timeStep, int subStepCount )
 
 	if ( world->scheduler != NULL )
 	{
-		b3ResetScheduler( world->scheduler );
+		b3BeginSchedulerStep( world->scheduler );
 	}
 
 	uint64_t stepTicks = b3GetTicks();
@@ -1178,6 +1189,12 @@ void b3World_Step( b3WorldId worldId, float timeStep, int subStepCount )
 	world->endEventArrayIndex = 1 - world->endEventArrayIndex;
 	b3Array_Clear( world->sensorEndEvents[world->endEventArrayIndex] );
 	b3Array_Clear( world->contactEndEvents[world->endEventArrayIndex] );
+
+	if ( world->scheduler != NULL )
+	{
+		b3EndSchedulerStep( world->scheduler );
+	}
+
 	world->locked = false;
 
 	if ( world->recording != NULL )
