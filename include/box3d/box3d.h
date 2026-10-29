@@ -1955,4 +1955,7 @@ B3_API bool b3Contact_IsValid( b3ContactId id );
 /// Get the manifolds for a contact. The manifold may have no points if the contact is not touching.
 B3_API b3ContactData b3Contact_GetData( b3ContactId contactId );
 
+/// Destroy a contact.
+B3_API void b3Contact_Destroy( b3ContactId contactId, bool wakeBodies );
+
 /**@}*/ // contact
