@@ -710,6 +710,29 @@ static void b3ComputeWitnessPoints( const b3Simplex* simplex, b3Vec3* vertexA, b
 	}
 }
 
+// Unrolled to prevent compiler memcpy stalls in GJK
+static inline void b3CopySimplex( b3Simplex* B3_RESTRICT dst, const b3Simplex* B3_RESTRICT src )
+{
+	dst->count = src->count;
+	switch ( src->count )
+	{
+		case 4:
+			dst->vertices[3] = src->vertices[3];
+			// fall through
+		case 3:
+			dst->vertices[2] = src->vertices[2];
+			// fall through
+		case 2:
+			dst->vertices[1] = src->vertices[1];
+			// fall through
+		case 1:
+			dst->vertices[0] = src->vertices[0];
+			// fall through
+		default:
+			break;
+	}
+}
+
 b3DistanceOutput b3ShapeDistance( const b3DistanceInput* input, b3SimplexCache* cache, b3Simplex* simplexes, int simplexCapacity )
 {
 	// The query runs in frame A using the relative pose of B in A.
@@ -778,7 +801,8 @@ b3DistanceOutput b3ShapeDistance( const b3DistanceInput* input, b3SimplexCache* 
 		simplex.vertices[0].a = 0.0f;
 	}
 
-	b3Simplex backup = { 0 };
+	b3Simplex backup;
+	backup.count = 0;
 
 	int simplexIndex = 0;
 	if ( simplexes != NULL && simplexIndex < simplexCapacity )
@@ -828,7 +852,7 @@ b3DistanceOutput b3ShapeDistance( const b3DistanceInput* input, b3SimplexCache* 
 		{
 			// No progress - reconstruct last simplex
 			B3_ASSERT( backup.count != 0 );
-			simplex = backup;
+			b3CopySimplex( &simplex, &backup );
 			break;
 		}
 
@@ -890,7 +914,7 @@ b3DistanceOutput b3ShapeDistance( const b3DistanceInput* input, b3SimplexCache* 
 		{
 			// No progress - reconstruct last simplex
 			B3_ASSERT( backup.count != 0 );
-			simplex = backup;
+			b3CopySimplex( &simplex, &backup );
 			break;
 		}
 
@@ -966,7 +990,7 @@ b3DistanceOutput b3ShapeDistance( const b3DistanceInput* input, b3SimplexCache* 
 		b3Vec3 supportB = b3Add( b3MulMV( m, input->proxyB.points[indexB] ), xf.p );
 
 		// Save current simplex and add new vertex - this can fail if we detect cycling
-		backup = simplex;
+		b3CopySimplex( &backup, &simplex );
 
 		// Check for duplicate support points. This is the main termination criteria.
 		bool duplicate = false;
