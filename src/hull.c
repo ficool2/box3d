@@ -4,6 +4,7 @@
 // Dirk Gregorius contributed portions of this code
 
 #include "hull.h"
+#include "manifold.h"
 
 #include "algorithm.h"
 #include "math_internal.h"
@@ -2791,6 +2792,7 @@ b3CastOutput b3RayCastHull( const b3HullData* shape, const b3RayCastInput* input
 		}
 	}
 
+	output.faceIndex = bestFace;
 	if ( bestFace >= 0 )
 	{
 		output.point = b3Add( input->origin, b3MulSV( lower, input->translation ) );
@@ -2819,7 +2821,16 @@ b3CastOutput b3ShapeCastHull( const b3HullData* shape, const b3ShapeCastInput* i
 	pairInput.maxFraction = input->maxFraction;
 	pairInput.canEncroach = input->canEncroach;
 
-	b3CastOutput output = b3ShapeCast( &pairInput );
+	b3SimplexCache cache = { 0 };
+	b3CastOutput output = b3ShapeCastWithCache( &pairInput, &cache );
+	output.faceIndex = B3_NULL_INDEX;
+
+	// final simplex sits on the hit feature, so face should be somewhere around it
+	if ( output.hit && cache.count > 0 && b3LengthSquared( output.normal ) > 0.0f )
+	{
+		output.faceIndex = b3FindIncidentFace( shape, b3Neg( output.normal ), cache.indexA[0] );
+	}
+
 	return output;
 }
 

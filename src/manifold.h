@@ -39,6 +39,7 @@ typedef enum b3FeatureOwner
 } b3FeatureOwner;
 
 int b3FindIncidentFace( const b3HullData* hull, b3Vec3 refNormal, int vertexIndex );
+b3CastOutput b3ShapeCastWithCache( const b3ShapeCastPairInput* input, b3SimplexCache* cache );
 b3FeaturePair b3MakeFeaturePair( b3FeatureOwner owner1, int index1, b3FeatureOwner owner2, int index2 );
 
 b3FeaturePair b3FlipPair( b3FeaturePair pair );

@@ -3,6 +3,7 @@
 
 // Dirk Gregorius contributed portions of this code
 
+#include "manifold.h"
 #include "math_internal.h"
 
 #include "box3d/collision.h"
@@ -1080,6 +1081,13 @@ b3DistanceOutput b3ShapeDistance( const b3DistanceInput* input, b3SimplexCache* 
 
 b3CastOutput b3ShapeCast( const b3ShapeCastPairInput* input )
 {
+	// Prepare input for distance query
+	b3SimplexCache cache = { 0 };
+	return b3ShapeCastWithCache( input, &cache );
+}
+
+b3CastOutput b3ShapeCastWithCache( const b3ShapeCastPairInput* input, b3SimplexCache* cache )
+{
 	// Compute tolerance
 	float linearSlop = B3_LINEAR_SLOP;
 	float totalRadius = input->proxyA.radius + input->proxyB.radius;
@@ -1087,9 +1095,6 @@ b3CastOutput b3ShapeCast( const b3ShapeCastPairInput* input )
 	float tolerance = 0.25f * linearSlop;
 
 	B3_ASSERT( target > tolerance );
-
-	// Prepare input for distance query
-	b3SimplexCache cache = { 0 };
 
 	float alpha = 0.0f;
 
@@ -1114,7 +1119,7 @@ b3CastOutput b3ShapeCast( const b3ShapeCastPairInput* input )
 	{
 		output.iterations += 1;
 
-		distanceOutput = b3ShapeDistance( &distanceInput, &cache, NULL, 0 );
+		distanceOutput = b3ShapeDistance( &distanceInput, cache, NULL, 0 );
 
 		if ( distanceOutput.distance < target + tolerance )
 		{
