@@ -504,6 +504,8 @@ static bool b3ComputeConvexManifold( b3World* world, int workerIndex, b3Contact*
 
 	b3LocalManifold geomManifold = { 0 };
 	geomManifold.points = pointBuffer;
+	geomManifold.faceA = B3_NULL_INDEX;
+	geomManifold.faceB = B3_NULL_INDEX;
 
 	b3Transform transformBtoA = b3InvMulWorldTransforms( xfA, xfB );
 
@@ -580,6 +582,8 @@ static bool b3ComputeConvexManifold( b3World* world, int workerIndex, b3Contact*
 
 	b3Matrix3 matrixA = b3MakeMatrixFromQuat( xfA.q );
 	manifold->normal = b3MulMV( matrixA, geomManifold.normal );
+	manifold->faceA = (int16_t)geomManifold.faceA;
+	manifold->faceB = (int16_t)geomManifold.faceB;
 
 	// Store point data in contact
 	for ( int i = 0; i < geomManifold.pointCount; ++i )
@@ -647,6 +651,7 @@ static bool b3UpdateConvexContact( b3World* world, int workerIndex, b3Contact* c
 		// Not flipping the feature ids because they just need to match and flipping is consistent.
 		b3Manifold* manifold = contact->manifolds + 0;
 		manifold->normal = b3Neg( manifold->normal );
+		B3_SWAP( manifold->faceA, manifold->faceB );
 		int pointCount = manifold->pointCount;
 		for ( int i = 0; i < pointCount; ++i )
 		{

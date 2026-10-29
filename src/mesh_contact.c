@@ -1153,6 +1153,8 @@ bool b3ComputeMeshManifolds( b3World* world, int workerIndex, b3Contact* contact
 		b3Manifold* manifold = contact->manifolds + i;
 		manifold->pointCount = pointCount;
 		manifold->normal = b3MulMV( matrixB, cm->manifoldNormal );
+		manifold->faceA = B3_NULL_INDEX;
+		manifold->faceB = B3_NULL_INDEX;
 
 		b3Vec3 clusterNormal = b3MulMV( matrixB, cm->manifoldNormal );
 		float bestDot = normalMatchTolerance;

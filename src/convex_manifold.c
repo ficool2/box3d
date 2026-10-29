@@ -15,6 +15,16 @@
 #include <stdbool.h>
 #include <stddef.h>
 
+// From the two faces sharing an edge, find the closer facing to the normal
+static int b3FindEdgeFace( const b3HullData* hull, int edgeIndex, b3Vec3 normal )
+{
+	const b3HullHalfEdge* edges = b3GetHullEdges( hull );
+	const b3Plane* planes = b3GetHullPlanes( hull );
+	int face1 = edges[edgeIndex].face;
+	int face2 = edges[edges[edgeIndex].twin].face;
+	return b3Dot( planes[face1].normal, normal ) >= b3Dot( planes[face2].normal, normal ) ? face1 : face2;
+}
+
 static int b3ClipSegment( b3ClipVertex segment[2], b3Plane plane )
 {
 	int vertexCount = 0;
@@ -356,6 +366,9 @@ void b3CollideHullAndSphere( b3LocalManifold* manifold, int capacity, const b3Hu
 		pt->point = point;
 		pt->separation = distanceOutput.distance - radius;
 		pt->pair = b3FeaturePair_single;
+
+		// Simplex is on closest feature. Face should be around first vertex
+		manifold->faceA = cache->count > 0 ? b3FindIncidentFace( hullA, b3Neg( normal ), cache->indexA[0] ) : -1;
 	}
 	else
 	{
@@ -395,6 +408,8 @@ void b3CollideHullAndSphere( b3LocalManifold* manifold, int capacity, const b3Hu
 		pt->point = point;
 		pt->separation = bestDistance - radius;
 		pt->pair = b3FeaturePair_single;
+
+		manifold->faceA = bestIndex;
 	}
 }
 
@@ -551,6 +566,7 @@ static bool b3BuildHullFaceAndCapsuleContact( b3LocalManifold* manifold, const b
 	// Clip the capsule edge against the side planes of the reference face
 	int refFace = query.indexA;
 	b3Plane refPlane = planes[refFace];
+	manifold->faceA = refFace;
 
 	b3ClipVertex segmentB[2];
 	segmentB[0].position = b3TransformPoint( transformBtoA, capsuleB->center1 );
@@ -641,6 +657,7 @@ static bool b3BuildHullAndCapsuleEdgeContact( b3LocalManifold* manifold, int cap
 	pt->point = point;
 	pt->separation = separation - capsuleB->radius;
 	pt->pair = b3MakeFeaturePair( b3_featureShapeA, query.indexA, b3_featureShapeB, query.indexB );
+	manifold->faceA = b3FindEdgeFace( hullA, query.indexA, normal );
 	return true;
 }
 
@@ -679,6 +696,7 @@ void b3CollideHullAndCapsule( b3LocalManifold* manifold, int capacity, const b3H
 		b3Vec3 delta = distanceOutput.normal;
 		int refFace = b3FindHullSupportFace( hullA, delta );
 		b3Plane refPlane = planes[refFace];
+		manifold->faceA = refFace;
 
 		// Try to create two contact points if closest
 		// points difference is nearly parallel to face normal
@@ -1136,6 +1154,8 @@ static bool b3BuildFaceAContact( b3LocalManifold* manifold, int capacity, const 
 	}
 
 	b3ReduceManifoldPoints( manifold, capacity, points, pointCount );
+	manifold->faceA = refFace;
+	manifold->faceB = incFace;
 
 	// Save cache
 	cache->separation = minSeparation;
@@ -1181,6 +1201,8 @@ static bool b3BuildFaceBContact( b3LocalManifold* manifold, int capacity, const 
 		pt->point = b3Add( b3MulMV( matrix, pt->point ), transformBtoA.p );
 		pt->pair = b3FlipPair( pt->pair );
 	}
+
+	B3_SWAP( manifold->faceA, manifold->faceB );
 
 	cache->type = (uint8_t)b3_faceAxisB;
 	cache->indexA = (uint8_t)query.indexA;
@@ -1238,6 +1260,9 @@ static bool b3BuildEdgeContact( b3LocalManifold* manifold, const b3HullData* hul
 	pt->point = point;
 	pt->separation = separation;
 	pt->pair = b3MakeFeaturePair( b3_featureShapeA, query.indexA, b3_featureShapeB, query.indexB );
+
+	manifold->faceA = b3FindEdgeFace( hullA, query.indexA, normal );
+	manifold->faceB = b3FindEdgeFace( hullB, query.indexB, b3InvRotateVector( transformBtoA.q, b3Neg( normal ) ) );
 
 	// Save cache
 	cache->separation = separation;

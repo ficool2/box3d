@@ -1286,6 +1286,12 @@ typedef struct b3ContactHitEvent
 	/// User material on shape B
 	uint64_t userMaterialIdB;
 
+	/// Hull face hit on shape A, -1 if unknown
+	int faceA;
+
+	/// Hull face hit on shape B, -1 if unknown
+	int faceB;
+
 } b3ContactHitEvent;
 
 /// Contact events are buffered in the world and are available
@@ -2865,6 +2871,9 @@ typedef struct b3Manifold
 	/// The number of contact points, will be 0 to 4
 	int pointCount;
 
+	/// Hull faces in contact on shape A and B, -1 if unknown
+	int16_t faceA, faceB;
+
 } b3Manifold;
 
 /// Cached separating axis feature.
@@ -2983,6 +2992,9 @@ typedef struct b3LocalManifold
 
 	/// b3MeshEdgeFlags.
 	int triangleFlags;
+
+	/// Hull faces that produced the contact on shape A and B, -1 if unknown
+	int faceA, faceB;
 } b3LocalManifold;
 
 /**@}*/ // collision
