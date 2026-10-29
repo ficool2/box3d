@@ -1554,6 +1554,9 @@ typedef struct b3CastOutput
 	/// The material index. May be -1 for null.
 	int materialIndex;
 
+	/// The hull face hit, -1 if unknown (initial overlap).
+	int faceIndex;
+
 	/// Did the cast hit?
 	bool hit;
 } b3CastOutput;
