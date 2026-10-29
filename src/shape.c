@@ -1342,6 +1342,20 @@ b3SurfaceMaterial b3Shape_GetMeshSurfaceMaterial( b3ShapeId shapeId, int index )
 	return b3GetShapeMaterials( shape )[index];
 }
 
+uint64_t b3Shape_GetUserMaterialId( b3ShapeId shapeId, int triangleIndex )
+{
+	b3World* world = b3GetWorld( shapeId.world0 );
+	b3Shape* shape = b3GetShape( world, shapeId );
+	B3_ASSERT( shape->type != b3_compoundShape );
+
+	if ( triangleIndex < 0 || ( shape->type != b3_meshShape && shape->type != b3_heightShape ) )
+	{
+		return b3GetShapeMaterials( shape )[0].userMaterialId;
+	}
+
+	return b3GetShapeUserMaterialId( shape, 0, triangleIndex );
+}
+
 b3Filter b3Shape_GetFilter( b3ShapeId shapeId )
 {
 	b3World* world = b3GetWorld( shapeId.world0 );
