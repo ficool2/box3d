@@ -270,6 +270,7 @@ typedef struct b3World
 	void* userTreeTask;
 
 	struct b3Scheduler* scheduler;
+	bool ownsScheduler;
 
 	void* userData;
 

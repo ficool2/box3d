@@ -49,6 +49,10 @@ typedef struct b3Scheduler
 
 	b3Semaphore* taskSemaphore;
 	b3AtomicInt shutdown;
+
+#if B3_DEBUG
+	b3AtomicInt stepping;
+#endif
 } b3Scheduler;
 
 // Try to claim and execute one pending task.
@@ -149,9 +153,27 @@ void b3DestroyScheduler( b3Scheduler* scheduler )
 	b3Free( scheduler, sizeof( b3Scheduler ) );
 }
 
-void b3ResetScheduler( b3Scheduler* scheduler )
+int b3Scheduler_GetWorkerCount( b3Scheduler* scheduler )
 {
+	return scheduler->workerCount;
+}
+
+void b3BeginSchedulerStep( b3Scheduler* scheduler )
+{
+#if B3_DEBUG
+	bool idle = b3AtomicCompareExchangeInt( &scheduler->stepping, 0, 1 );
+	B3_ASSERT( idle && "worlds sharing a scheduler stepped at the same time" );
+#endif
 	b3AtomicStoreInt( &scheduler->nextSlot, 0 );
+}
+
+void b3EndSchedulerStep( b3Scheduler* scheduler )
+{
+#if B3_DEBUG
+	b3AtomicStoreInt( &scheduler->stepping, 0 );
+#else
+	B3_UNUSED( scheduler );
+#endif
 }
 
 void* b3SchedulerEnqueueTask( b3TaskCallback* task, void* taskContext, void* userContext, const char* name )

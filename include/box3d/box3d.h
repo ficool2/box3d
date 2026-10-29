@@ -276,6 +276,17 @@ B3_API void b3World_SetWorkerCount( b3WorldId worldId, int count );
 /// Get the worker count.
 B3_API int b3World_GetWorkerCount( b3WorldId worldId );
 
+/// Create a built-in scheduler that several worlds can share through b3WorldDef::scheduler.
+/// Starts workerCount - 1 threads.
+/// Must be in the range [1, B3_MAX_WORKERS]
+B3_API b3Scheduler* b3CreateScheduler( int workerCount );
+
+/// Destroy a scheduler made with b3CreateScheduler.
+B3_API void b3DestroyScheduler( b3Scheduler* scheduler );
+
+/// Get the worker count of a scheduler, including the stepping thread.
+B3_API int b3Scheduler_GetWorkerCount( b3Scheduler* scheduler );
+
 /// Dump memory stats to log.
 B3_API void b3World_DumpMemoryStats( b3WorldId worldId );
 

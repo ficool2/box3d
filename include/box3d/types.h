@@ -14,6 +14,9 @@
 #define B3_DEFAULT_CATEGORY_BITS UINT64_MAX
 #define B3_DEFAULT_MASK_BITS UINT64_MAX
 
+/// Box3D's built-in task scheduler. See b3CreateScheduler.
+typedef struct b3Scheduler b3Scheduler;
+
 /// Task interface
 /// This is the prototype for a Box3D task. Your task system is expected to run this callback on a
 /// worker thread, exactly once per enqueue, passing back the same taskContext pointer supplied to
@@ -217,6 +220,10 @@ typedef struct b3WorldDef
 
 	/// User context that is provided to enqueueTask and finishTask
 	void* userTaskContext;
+
+	/// Optional built-in scheduler shared with other worlds, from b3CreateScheduler.
+	/// Ignored when task callbacks are provided.
+	b3Scheduler* scheduler;
 
 	/// User data associated with a world
 	void* userData;
