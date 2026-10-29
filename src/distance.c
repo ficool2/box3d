@@ -12,9 +12,6 @@
 #define B3_MAX_SIMPLEX_VERTICES 4
 #define B3_MAX_GJK_ITERATIONS 32
 
-// Distance accuracy at which GJK stops refining.
-#define B3_GJK_TOLERANCE ( 0.01f * B3_LINEAR_SLOP )
-
 int b3GetProxySupport( const b3ShapeProxy* proxy, b3Vec3 axis )
 {
 	int count = proxy->count;
@@ -992,16 +989,6 @@ b3DistanceOutput b3ShapeDistance( const b3DistanceInput* input, b3SimplexCache* 
 		b3Vec3 searchDirection2 = b3MulMV( mt, searchDirection );
 		int indexB = b3GetProxySupport( &input->proxyB, searchDirection2 );
 		b3Vec3 supportB = b3Add( b3MulMV( m, input->proxyB.points[indexB] ), xf.p );
-
-		// Converged if the new support point brings the closest point no meaningfully closer to the origin.
-		{
-			float gap = distanceSq - b3Dot( closestPoint, b3Sub( supportB, supportA ) );
-			float tolerance = B3_GJK_TOLERANCE;
-			if ( gap <= 0.0f || gap * gap <= tolerance * tolerance * distanceSq )
-			{
-				break;
-			}
-		}
 
 		// Save current simplex and add new vertex - this can fail if we detect cycling
 		b3CopySimplex( &backup, &simplex );
