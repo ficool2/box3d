@@ -1004,6 +1004,9 @@ B3_API void b3Shape_SetMeshMaterial( b3ShapeId shapeId, b3SurfaceMaterial surfac
 /// Get a surface material for a mesh shape
 B3_API b3SurfaceMaterial b3Shape_GetMeshSurfaceMaterial( b3ShapeId shapeId, int index );
 
+/// Get the user material id at a contact point.
+B3_API uint64_t b3Shape_GetUserMaterialId( b3ShapeId shapeId, int triangleIndex );
+
 /// Get the shape filter
 B3_API b3Filter b3Shape_GetFilter( b3ShapeId shapeId );
 
