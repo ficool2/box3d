@@ -58,6 +58,18 @@ static b3Contact* b3GetContactFullId( b3World* world, b3ContactId contactId )
 	return contact;
 }
 
+void b3Contact_Destroy( b3ContactId contactId, bool wakeBodies )
+{
+	b3World* world = b3GetUnlockedWorld( contactId.world0 );
+	if ( world == NULL )
+	{
+		return;
+	}
+
+	b3Contact* contact = b3GetContactFullId( world, contactId );
+	b3DestroyContact( world, contact, wakeBodies );
+}
+
 b3ContactData b3Contact_GetData( b3ContactId contactId )
 {
 	b3World* world = b3GetWorld( contactId.world0 );
