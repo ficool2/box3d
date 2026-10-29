@@ -2112,6 +2112,7 @@ void b3Solve( b3World* world, b3StepContext* stepContext )
 
 					bool found = false;
 					int triangleIndex = 0;
+					int faceA = B3_NULL_INDEX, faceB = B3_NULL_INDEX;
 					int manifoldCount = contact->manifoldCount;
 					for ( int i = 0; i < manifoldCount; ++i )
 					{
@@ -2129,6 +2130,8 @@ void b3Solve( b3World* world, b3StepContext* stepContext )
 								event.point = b3OffsetPos( midCenter, b3Lerp( mp->anchorA, mp->anchorB, 0.5f ) );
 								event.normal = manifold->normal;
 								triangleIndex = mp->triangleIndex;
+								faceA = manifold->faceA;
+								faceB = manifold->faceB;
 								found = true;
 							}
 						}
@@ -2150,6 +2153,8 @@ void b3Solve( b3World* world, b3StepContext* stepContext )
 						// childIndex argument is irrelevant for it. shapeA carries the compound.
 						event.userMaterialIdA = b3GetShapeUserMaterialId( shapeA, contact->childIndex, triangleIndex );
 						event.userMaterialIdB = b3GetShapeUserMaterialId( shapeB, 0, triangleIndex );
+						event.faceA = faceA;
+						event.faceB = faceB;
 
 						b3Array_Push( world->contactHitEvents, event );
 					}
