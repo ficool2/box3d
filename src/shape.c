@@ -1417,6 +1417,9 @@ void b3Shape_SetFilter( b3ShapeId shapeId, b3Filter filter, bool invokeContacts 
 		return;
 	}
 
+	// If the category bits change, I need to destroy the proxy because it affects the tree sorting.
+	bool destroyProxy = filter.categoryBits != shape->filter.categoryBits;
+
 	shape->filter = filter;
 
 	if ( invokeContacts )
@@ -1424,8 +1427,6 @@ void b3Shape_SetFilter( b3ShapeId shapeId, b3Filter filter, bool invokeContacts 
 		world->locked = true;
 		bool wakeBodies = true;
 
-		// If the category bits change, I need to destroy the proxy because it affects the tree sorting.
-		bool destroyProxy = filter.categoryBits == shape->filter.categoryBits;
 
 		// need to wake bodies because a filter change may destroy contacts
 		b3ResetProxy( world, shape, wakeBodies, destroyProxy );
