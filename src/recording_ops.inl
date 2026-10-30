@@ -15,7 +15,7 @@
 //   0x40-0x4F  shape create/destroy
 //   0x50-0x6F  shape mutators
 //   0x80       step
-//   0x81-0x8F  mover and pogo joints
+//   0x81-0x8F  mover, pogo and pulley joints
 //   0x90-0xE7  joints (create, generic, per-type)
 //   0xE8-0xEF  spatial queries
 //   0xF0-0xFF  markers
@@ -225,6 +225,10 @@ B3_REC_OP( 0x87, PogoJointSetSpringDampingRatio, RET_NONE, ARG( JOINTID, joint )
 B3_REC_OP( 0x88, PogoJointSetMaxTensionForce, RET_NONE, ARG( JOINTID, joint ) ARG( F32, force ) )
 B3_REC_OP( 0x89, PogoJointSetMaxCompressionForce, RET_NONE, ARG( JOINTID, joint ) ARG( F32, force ) )
 B3_REC_OP( 0x8A, PogoJointSetNormal, RET_NONE, ARG( JOINTID, joint ) ARG( VEC3, normal ) )
+
+// Pulley joint
+B3_REC_OP( 0x8B, CreatePulleyJoint, RET_JOINTID, ARG( WORLDID, world ) ARG( PULLEYJOINTDEF, def ) )
+B3_REC_OP( 0x8C, PulleyJointSetLength, RET_NONE, ARG( JOINTID, joint ) ARG( F32, length ) )
 
 // Spatial queries. Inputs flow through the manifest (reader side). The hit tail and result are
 // hand-written in recording.c / recording_replay.c since they are variable length.

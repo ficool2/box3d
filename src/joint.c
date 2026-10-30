@@ -77,6 +77,15 @@ b3PogoJointDef b3DefaultPogoJointDef( void )
 	return def;
 }
 
+b3PulleyJointDef b3DefaultPulleyJointDef( void )
+{
+	b3PulleyJointDef def = { 0 };
+	def.base = b3DefaultJointDef();
+	def.length = 1.0f;
+	def.ratio = 1.0f;
+	return def;
+}
+
 b3FilterJointDef b3DefaultFilterJointDef( void )
 {
 	b3FilterJointDef def = { 0 };
@@ -584,6 +593,35 @@ b3JointId b3CreatePogoJoint( b3WorldId worldId, const b3PogoJointDef* def )
 
 	b3JointId jointId = { joint->jointId + 1, world->worldId, pair.joint->generation };
 	B3_REC_CREATE( world, CreatePogoJoint, jointId, worldId, *def );
+	return jointId;
+}
+
+b3JointId b3CreatePulleyJoint( b3WorldId worldId, const b3PulleyJointDef* def )
+{
+	B3_CHECK_JOINT_DEF( def );
+	B3_ASSERT( b3IsValidPosition( def->groundAnchorA ) && b3IsValidPosition( def->groundAnchorB ) );
+	B3_ASSERT( b3IsValidFloat( def->length ) && def->length > 0.0f );
+	B3_ASSERT( b3IsValidFloat( def->ratio ) && def->ratio > 0.0f );
+
+	b3World* world = b3GetUnlockedWorldFromId( worldId );
+	if ( world == NULL )
+	{
+		return (b3JointId){ 0 };
+	}
+
+	b3JointPair pair = b3CreateJoint( world, &def->base, b3_pulleyJoint );
+	b3JointSim* joint = pair.jointSim;
+
+	joint->pulleyJoint = (b3PulleyJoint){ 0 };
+	joint->pulleyJoint.groundAnchorA = def->groundAnchorA;
+	joint->pulleyJoint.groundAnchorB = def->groundAnchorB;
+	joint->pulleyJoint.length = b3MaxFloat( def->length, B3_LINEAR_SLOP );
+	joint->pulleyJoint.ratio = def->ratio;
+	joint->pulleyJoint.isRigid = def->isRigid;
+	joint->pulleyJoint.holdTaut = def->holdTaut;
+
+	b3JointId jointId = { joint->jointId + 1, world->worldId, pair.joint->generation };
+	B3_REC_CREATE( world, CreatePulleyJoint, jointId, worldId, *def );
 	return jointId;
 }
 
@@ -1220,6 +1258,13 @@ void b3GetJointReaction( b3World* world, b3JointSim* sim, float invTimeStep, flo
 		}
 		break;
 
+		case b3_pulleyJoint:
+		{
+			b3PulleyJoint* joint = &sim->pulleyJoint;
+			linearImpulse = b3AbsFloat( joint->impulse );
+		}
+		break;
+
 		default:
 			break;
 	}
@@ -1267,6 +1312,9 @@ static b3Vec3 b3GetJointConstraintForce( b3World* world, b3Joint* joint )
 		case b3_pogoJoint:
 			return b3GetPogoJointForce( world, base );
 
+		case b3_pulleyJoint:
+			return b3GetPulleyJointForce( world, base );
+
 		default:
 			B3_ASSERT( false );
 			return b3Vec3_zero;
@@ -1308,6 +1356,7 @@ static b3Vec3 b3GetJointConstraintTorque( b3World* world, b3Joint* joint )
 
 		case b3_moverJoint:
 		case b3_pogoJoint:
+		case b3_pulleyJoint:
 			return b3Vec3_zero;
 
 		default:
@@ -1383,6 +1432,15 @@ float b3Joint_GetLinearSeparation( b3JointId jointId )
 
 		case b3_pogoJoint:
 			return 0.0f;
+
+		case b3_pulleyJoint:
+		{
+			b3PulleyJoint* pulleyJoint = &base->pulleyJoint;
+			float lengthA = b3Length( b3SubPos( pA, pulleyJoint->groundAnchorA ) );
+			float lengthB = b3Length( b3SubPos( pB, pulleyJoint->groundAnchorB ) );
+			float C = lengthA + pulleyJoint->ratio * lengthB - pulleyJoint->length;
+			return pulleyJoint->isRigid ? b3AbsFloat( C ) : b3MaxFloat( C, 0.0f );
+		}
 
 		case b3_filterJoint:
 			return 0.0f;
@@ -1492,6 +1550,9 @@ float b3Joint_GetAngularSeparation( b3JointId jointId )
 			return 0.0f;
 
 		case b3_pogoJoint:
+			return 0.0f;
+
+		case b3_pulleyJoint:
 			return 0.0f;
 
 		case b3_filterJoint:
@@ -1654,6 +1715,10 @@ void b3PrepareJoint( b3JointSim* joint, b3StepContext* context )
 			b3PreparePogoJoint( joint, context );
 			break;
 
+		case b3_pulleyJoint:
+			b3PreparePulleyJoint( joint, context );
+			break;
+
 		default:
 			B3_ASSERT( false );
 	}
@@ -1704,6 +1769,10 @@ void b3WarmStartJoint( b3JointSim* joint, b3StepContext* context )
 
 		case b3_pogoJoint:
 			b3WarmStartPogoJoint( joint, context );
+			break;
+
+		case b3_pulleyJoint:
+			b3WarmStartPulleyJoint( joint, context );
 			break;
 
 		default:
@@ -1758,6 +1827,10 @@ void b3SolveJoint( b3JointSim* joint, b3StepContext* context, bool useBias )
 
 		case b3_pogoJoint:
 			b3SolvePogoJoint( joint, context, useBias );
+			break;
+
+		case b3_pulleyJoint:
+			b3SolvePulleyJoint( joint, context, useBias );
 			break;
 
 		default:
@@ -1882,6 +1955,10 @@ void b3DrawJoint( b3DebugDraw* draw, b3World* world, b3Joint* joint )
 
 		case b3_pogoJoint:
 			b3DrawPogoJoint( draw, world, jointSim, transformA, transformB, scale );
+			break;
+
+		case b3_pulleyJoint:
+			b3DrawPulleyJoint( draw, jointSim, transformA, transformB );
 			break;
 
 		default:

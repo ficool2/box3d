@@ -346,6 +346,8 @@ _Static_assert( sizeof( void* ) != 8 || sizeof( b3MoverJointDef ) == 128,
 				"b3MoverJointDef changed: update b3RecW_MOVERJOINTDEF and its reader together" );
 _Static_assert( sizeof( void* ) != 8 || sizeof( b3PogoJointDef ) == 152,
 				"b3PogoJointDef changed: update b3RecW_POGOJOINTDEF and its reader together" );
+_Static_assert( sizeof( void* ) != 8 || sizeof( b3PulleyJointDef ) == 152,
+				"b3PulleyJointDef changed: update b3RecW_PULLEYJOINTDEF and its reader together" );
 
 void b3RecW_EXPLOSIONDEF( b3RecBuffer* buf, b3ExplosionDef v )
 {
@@ -570,6 +572,17 @@ void b3RecW_POGOJOINTDEF( b3RecBuffer* buf, b3PogoJointDef v )
 	b3RecW_F32( buf, v.maxCompressionForce );
 	b3RecW_F32( buf, v.impulse );
 	b3RecW_F32( buf, v.velocity );
+}
+
+void b3RecW_PULLEYJOINTDEF( b3RecBuffer* buf, b3PulleyJointDef v )
+{
+	b3RecW_JointBase( buf, &v.base );
+	b3RecW_POSITION( buf, v.groundAnchorA );
+	b3RecW_POSITION( buf, v.groundAnchorB );
+	b3RecW_F32( buf, v.length );
+	b3RecW_F32( buf, v.ratio );
+	b3RecW_BOOL( buf, v.isRigid );
+	b3RecW_BOOL( buf, v.holdTaut );
 }
 
 // Query recording. A query collects a variable number of hits through a user callback, so the count
