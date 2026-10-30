@@ -673,6 +673,19 @@ b3PogoJointDef b3RecR_POGOJOINTDEF( b3RecReader* rdr )
 	return def;
 }
 
+b3PulleyJointDef b3RecR_PULLEYJOINTDEF( b3RecReader* rdr )
+{
+	b3PulleyJointDef def = b3DefaultPulleyJointDef();
+	b3RecR_JointBase( rdr, &def.base );
+	def.groundAnchorA = b3RecR_POSITION( rdr );
+	def.groundAnchorB = b3RecR_POSITION( rdr );
+	def.length = b3RecR_F32( rdr );
+	def.ratio = b3RecR_F32( rdr );
+	def.isRigid = b3RecR_BOOL( rdr );
+	def.holdTaut = b3RecR_BOOL( rdr );
+	return def;
+}
+
 // Outliner body tracking. Defined after the player struct; forward declared here because the
 // create/destroy dispatch sits above that struct.
 static void b3RecTrackBodyCreate( b3RecPlayer* player, b3BodyId id );
@@ -1304,6 +1317,15 @@ static void b3RecDispatch_CreatePogoJoint( const b3RecArgs_CreatePogoJoint* a, b
 	b3RecCheckJointId( rdr, b3CreatePogoJoint( rdr->replayWorldId, &def ), recId );
 }
 
+static void b3RecDispatch_CreatePulleyJoint( const b3RecArgs_CreatePulleyJoint* a, b3RecReader* rdr )
+{
+	b3JointId recId = b3RecR_JOINTID( rdr );
+	b3PulleyJointDef def = a->def;
+	def.base.bodyIdA = b3RecMakeBodyId( rdr, def.base.bodyIdA );
+	def.base.bodyIdB = b3RecMakeBodyId( rdr, def.base.bodyIdB );
+	b3RecCheckJointId( rdr, b3CreatePulleyJoint( rdr->replayWorldId, &def ), recId );
+}
+
 static void b3RecDispatch_DestroyJoint( const b3RecArgs_DestroyJoint* a, b3RecReader* rdr )
 {
 	b3DestroyJoint( b3RecMakeJointId( rdr, a->joint ), a->wakeAttached );
@@ -1720,6 +1742,11 @@ static void b3RecDispatch_MoverJointSetMaxVelocityForce(
 	const b3RecArgs_MoverJointSetMaxVelocityForce* a, b3RecReader* rdr )
 {
 	b3MoverJoint_SetMaxVelocityForce( b3RecMakeJointId( rdr, a->joint ), a->maxForce );
+}
+
+static void b3RecDispatch_PulleyJointSetLength( const b3RecArgs_PulleyJointSetLength* a, b3RecReader* rdr )
+{
+	b3PulleyJoint_SetLength( b3RecMakeJointId( rdr, a->joint ), a->length );
 }
 
 static void b3RecDispatch_PogoJointSetRestLength( const b3RecArgs_PogoJointSetRestLength* a,

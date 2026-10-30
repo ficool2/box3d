@@ -62,6 +62,7 @@ set(BOX3D_SOURCE_FILES
 	platform.h
 	pogo_joint.c
 	prismatic_joint.c
+	pulley_joint.c
 	qsort.h
 	rapidhash.h
 	recording_ops.inl

@@ -1514,6 +1514,36 @@ B3_API float b3PogoJoint_GetImpulse( b3JointId jointId );
 /**@}*/ // pogo_joint
 
 /**
+ * @defgroup pulley_joint Pulley Joint
+ * @brief Functions for the pulley joint.
+ * @{
+ */
+
+/// Create a pulley joint
+/// @see b3PulleyJointDef for details
+B3_API b3JointId b3CreatePulleyJoint( b3WorldId worldId, const b3PulleyJointDef* def );
+
+/// Set the total rope length of a pulley joint
+B3_API void b3PulleyJoint_SetLength( b3JointId jointId, float length );
+
+/// Get the total rope length of a pulley joint
+B3_API float b3PulleyJoint_GetLength( b3JointId jointId );
+
+/// Get the pulley ratio
+B3_API float b3PulleyJoint_GetRatio( b3JointId jointId );
+
+/// Get the ground anchor for body A in worldspace
+B3_API b3Pos b3PulleyJoint_GetGroundAnchorA( b3JointId jointId );
+
+/// Get the ground anchor for body B in worldspace
+B3_API b3Pos b3PulleyJoint_GetGroundAnchorB( b3JointId jointId );
+
+/// Get the current rope length
+B3_API float b3PulleyJoint_GetCurrentLength( b3JointId jointId );
+
+/**@}*/ // pulley_joint
+
+/**
  * @defgroup filter_joint Filter Joint
  * @brief Functions for the filter joint.
  *

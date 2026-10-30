@@ -661,6 +661,7 @@ typedef enum b3JointType
 	b3_wheelJoint,
 	b3_moverJoint,
 	b3_pogoJoint,
+	b3_pulleyJoint,
 } b3JointType;
 
 /// Base joint definition used by all joint types. The local frames are measured from the
@@ -857,6 +858,37 @@ typedef struct b3PogoJointDef
 /// Use this to initialize your joint definition
 /// @ingroup pogo_joint
 B3_API b3PogoJointDef b3DefaultPogoJointDef( void );
+
+/// Pulley joint definition. Connects two bodies to fixed ground anchors,
+/// with a rope running over the anchors so that: lengthA + ratio * lengthB <= length
+/// @ingroup pulley_joint
+typedef struct b3PulleyJointDef
+{
+	/// Base joint definition
+	b3JointDef base;
+
+	/// The ground anchor for body A in worldspace
+	b3Pos groundAnchorA;
+
+	/// The ground anchor for body B in worldspace
+	b3Pos groundAnchorB;
+
+	/// The total rope length, including the ratio applied to segment B
+	float length;
+
+	/// The pulley ratio
+	float ratio;
+
+	/// If true the rope is a rod that can push as well as pull
+	bool isRigid;
+
+	/// If true a taut rope also pushes
+	bool holdTaut;
+} b3PulleyJointDef;
+
+/// Use this to initialize your joint definition
+/// @ingroup pulley_joint
+B3_API b3PulleyJointDef b3DefaultPulleyJointDef( void );
 
 /// A filter joint is used to disable collision between two specific bodies.
 /// @ingroup filter_joint
