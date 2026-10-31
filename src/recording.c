@@ -346,7 +346,7 @@ _Static_assert( sizeof( void* ) != 8 || sizeof( b3MoverJointDef ) == 128,
 				"b3MoverJointDef changed: update b3RecW_MOVERJOINTDEF and its reader together" );
 _Static_assert( sizeof( void* ) != 8 || sizeof( b3PogoJointDef ) == 152,
 				"b3PogoJointDef changed: update b3RecW_POGOJOINTDEF and its reader together" );
-_Static_assert( sizeof( void* ) != 8 || sizeof( b3PulleyJointDef ) == 152,
+_Static_assert( sizeof( void* ) != 8 || sizeof( b3PulleyJointDef ) == 152 || sizeof( b3PulleyJointDef ) == 176,
 				"b3PulleyJointDef changed: update b3RecW_PULLEYJOINTDEF and its reader together" );
 
 void b3RecW_EXPLOSIONDEF( b3RecBuffer* buf, b3ExplosionDef v )
