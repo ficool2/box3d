@@ -1438,6 +1438,11 @@ void b3World_Draw( b3WorldId worldId, b3DebugDraw* draw, uint64_t maskBits )
 
 	for ( int i = 0; i < b3_bodyTypeCount; ++i )
 	{
+		if ( i == b3_staticBody && draw->skipStatic )
+		{
+			continue;
+		}
+
 		b3DynamicTree_Query( world->broadPhase.trees + i, draw->drawingBounds, maskBits, false, DrawQueryCallback, &drawContext );
 	}
 

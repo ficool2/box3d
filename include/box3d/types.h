@@ -3322,6 +3322,9 @@ typedef struct b3DebugDraw
 	/// Global scaling for joint drawing
 	float jointScale;
 
+	/// Option to skip the static body tree
+	bool skipStatic;
+
 	/// Option to draw shapes
 	bool drawShapes;
 
