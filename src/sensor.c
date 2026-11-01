@@ -107,6 +107,12 @@ static bool b3SensorQueryCallback( int proxyId, uint64_t userData, void* context
 	b3World* world = queryContext->world;
 	b3Shape* otherShape = b3Array_Get( world->shapes, shapeId );
 
+	// Sensors don't visit other sensors.
+	if ( otherShape->sensorIndex != B3_NULL_INDEX )
+	{
+		return true;
+	}
+
 	// Visitors must be convex.
 	if ( b3IsConvex( otherShape->type ) == false )
 	{
