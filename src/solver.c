@@ -821,7 +821,24 @@ static void b3FinalizeBodiesTask( int startIndex, int endIndex, int workerIndex,
 			// Body is safe to advance and is falling asleep
 			sim->center0 = sim->center;
 			sim->rotation0 = sim->transform.q;
-			body->sleepTime += timeStep;
+
+			// Require the body to be staying near the point where it started becoming sleepy.
+			// This helps keep bodies drifting in fluids.
+			float driftTolerance = B3_SLEEP_DRIFT_FRACTION * body->sleepThreshold * B3_TIME_TO_SLEEP;
+			if ( body->sleepTime == 0.0f )
+			{
+				body->sleepAnchor = sim->center;
+				body->sleepTime += timeStep;
+			}
+			else if ( b3LengthSquared( b3SubPos( sim->center, body->sleepAnchor ) ) > driftTolerance * driftTolerance )
+			{
+				body->sleepAnchor = sim->center;
+				body->sleepTime = 0.0f;
+			}
+			else
+			{
+				body->sleepTime += timeStep;
+			}
 		}
 
 		// Update world space inverse inertia tensor.

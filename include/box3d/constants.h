@@ -99,6 +99,10 @@ B3_API float b3GetLengthUnitsPerMeter( void );
 /// The time that a body must be still before it will go to sleep. In seconds.
 #define B3_TIME_TO_SLEEP 0.5f
 
+// A sleepy body whose center drifts further than this fraction of sleepThreshold is kept awake.
+// Catches slow steady motion below the sleep velocity.
+#define B3_SLEEP_DRIFT_FRACTION 0.25f
+
 /// The maximum number of restitution iterations. Needed to avoid a solver overflow.
 #define B3_MAX_RESTITUTION_ITERATIONS 63
 

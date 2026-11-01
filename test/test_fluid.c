@@ -261,7 +261,7 @@ static int FluidWakeTest( void )
 	b3ShapeId boxId = CreateBox( worldId, &cube, (b3Vec3){ 0.0f, 0.0f, 0.5f }, b3Quat_identity, 500.0f );
 	b3BodyId bodyId = b3Shape_GetBody( boxId );
 
-	for ( int i = 0; i < 600 && b3Body_IsAwake( bodyId ); ++i )
+	for ( int i = 0; i < 1200 && b3Body_IsAwake( bodyId ); ++i )
 	{
 		b3World_Step( worldId, 1.0f / 60.0f, 4 );
 	}

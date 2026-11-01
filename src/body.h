@@ -113,6 +113,8 @@ typedef struct b3Body
 	float sleepThreshold;
 	float sleepTime;
 	float sleepVelocity;
+	b3Pos sleepAnchor;
+
 	float safetyFactor;
 	float mass;
 
