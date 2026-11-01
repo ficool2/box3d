@@ -101,6 +101,12 @@ B3_REC_OP( 0x5C, ShapeSetName, RET_NONE, ARG( SHAPEID, shape ) ARG( STR, name ) 
 B3_REC_OP( 0x5D, ShapeSetMeshMaterial, RET_NONE, ARG( SHAPEID, shape ) ARG( MATERIAL, material ) ARG( I32, index ) )
 B3_REC_OP( 0x5E, ShapeSetHull, RET_NONE, ARG( SHAPEID, shape ) ARG( GEOMID, geometryId ) )
 B3_REC_OP( 0x5F, ShapeSetMesh, RET_NONE, ARG( SHAPEID, shape ) ARG( GEOMID, geometryId ) ARG( VEC3, scale ) )
+B3_REC_OP( 0x60, ShapeEnableFluid, RET_NONE, ARG( SHAPEID, shape ) ARG( FLUIDDEF, def ) )
+B3_REC_OP( 0x61, ShapeDisableFluid, RET_NONE, ARG( SHAPEID, shape ) )
+B3_REC_OP( 0x62, ShapeSetFluidSurface, RET_NONE, ARG( SHAPEID, shape ) ARG( VEC3, normal ) ARG( F32, offset ) )
+B3_REC_OP( 0x63, ShapeSetFluidCurrent, RET_NONE, ARG( SHAPEID, shape ) ARG( VEC3, currentVelocity ) )
+B3_REC_OP( 0x64, ShapeSetBuoyancyScale, RET_NONE, ARG( SHAPEID, shape ) ARG( F32, buoyancyScale ) )
+B3_REC_OP( 0x65, ShapeSetFluidDragScale, RET_NONE, ARG( SHAPEID, shape ) ARG( F32, fluidDragScale ) )
 
 // Joint create and destroy
 B3_REC_OP( 0x90, CreateParallelJoint, RET_JOINTID, ARG( WORLDID, world ) ARG( PARALLELJOINTDEF, def ) )

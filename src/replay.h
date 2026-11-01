@@ -235,6 +235,7 @@ b3MassData b3RecR_MASSDATA( b3RecReader* rdr );
 b3MotionLocks b3RecR_LOCKS( b3RecReader* rdr );
 const char* b3RecR_STR( b3RecReader* rdr );
 b3ExplosionDef b3RecR_EXPLOSIONDEF( b3RecReader* rdr );
+b3FluidDef b3RecR_FLUIDDEF( b3RecReader* rdr );
 b3BodyDef b3RecR_BODYDEF( b3RecReader* rdr );
 b3ShapeDef b3RecR_SHAPEDEF( b3RecReader* rdr );
 b3ParallelJointDef b3RecR_PARALLELJOINTDEF( b3RecReader* rdr );

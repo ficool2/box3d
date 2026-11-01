@@ -994,6 +994,20 @@ Sensor events are only enabled for shapes if `b3ShapeDef::enableSensorEvents` is
 > A shape cannot start or stop being a sensor. Such a feature would break
 > sensor events, potentially causing bugs in game logic.
 
+### Fluids
+A sensor shape can act as a volume of liquid. Each step, the fluid applies buoyancy and drag to the
+dynamic shapes overlapping it, using the sensor overlaps from the previous step.
+
+```c
+b3ShapeDef poolDef = b3DefaultShapeDef();
+b3ShapeId poolId = b3CreateHullShape(poolBodyId, &poolDef, &poolHull.base);
+
+b3FluidDef fluidDef = b3DefaultFluidDef();
+fluidDef.surface = (b3Plane){{0.0f, 0.0f, 1.0f}, 0.0f};
+fluidDef.density = 1000.0f;
+b3Shape_EnableFluid(poolId, &fluidDef);
+```
+
 ## Contacts
 Contacts are internal objects created by Box3D to manage collision between pairs of
 shapes. They are fundamental to rigid body simulation in games.

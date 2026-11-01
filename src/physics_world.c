@@ -18,6 +18,7 @@
 #include "platform.h"
 #include "recording.h"
 #include "scheduler.h"
+#include "fluid.h"
 #include "sensor.h"
 #include "shape.h"
 #include "simd.h"
@@ -461,6 +462,7 @@ void b3DestroyWorld( b3WorldId worldId )
 		b3Array_Destroy( world->sensors.data[i].hits );
 		b3Array_Destroy( world->sensors.data[i].overlaps1 );
 		b3Array_Destroy( world->sensors.data[i].overlaps2 );
+		b3Array_Destroy( world->sensors.data[i].fluidVisitors );
 	}
 
 	b3Array_Destroy( world->sensors );
@@ -1105,6 +1107,9 @@ void b3World_Step( b3WorldId worldId, float timeStep, int subStepCount )
 		c->contactCount = b3MaxInt( c->contactCount, totalContactCount );
 	}
 
+	// Update fluids that changed/moved
+	b3WakeFluidVisitors( world );
+
 	// Update collision pairs and create contacts
 	{
 		uint64_t pairTicks = b3GetTicks();
@@ -1150,6 +1155,9 @@ void b3World_Step( b3WorldId worldId, float timeStep, int subStepCount )
 		b3Collide( &context );
 		world->profile.collide = b3GetMilliseconds( collideTicks );
 	}
+
+	// Buoyancy and drag from fluid sensors
+	b3ApplyFluidForces( world, timeStep );
 
 	// Integrate velocities, solve velocity constraints, and integrate positions.
 	if ( timeStep > 0.0f )
@@ -2429,6 +2437,7 @@ static uint64_t b3GetWorldByteCount( b3World* world, bool log )
 		sensorOverlapBytes += b3Array_ByteCount( sensor->hits );
 		sensorOverlapBytes += b3Array_ByteCount( sensor->overlaps1 );
 		sensorOverlapBytes += b3Array_ByteCount( sensor->overlaps2 );
+		sensorOverlapBytes += b3Array_ByteCount( sensor->fluidVisitors );
 	}
 	total += sensorOverlapBytes;
 

@@ -522,6 +522,14 @@ typedef struct b3ShapeDef
 	/// Explosion scale for b3World_Explode. non-dimensional
 	float explosionScale;
 
+	/// Scales the buoyancy this shape receives from fluids. Zero disables buoyancy. non-dimensional
+	/// @see b3FluidDef
+	float buoyancyScale;
+
+	/// Scales the drag this shape receives from fluids. Zero disables fluid drag. non-dimensional
+	/// @see b3FluidDef
+	float fluidDragScale;
+
 	/// Contact filtering data.
 	b3Filter filter;
 
@@ -578,6 +586,37 @@ typedef struct b3ShapeDef
 /// Use this to initialize your shape definition
 /// @ingroup shape
 B3_API b3ShapeDef b3DefaultShapeDef( void );
+
+/// Used to create a volume of liquid.
+/// @see b3Shape_EnableFluid
+/// @ingroup shape
+typedef struct b3FluidDef
+{
+	/// The fluid surface in the local frame of the sensor body.
+	b3Plane surface;
+
+	/// The fluid density, in kg/m^3.
+	float density;
+
+	/// Linear drag rate in 1/s, applied at the center of buoyancy.
+	float linearDrag;
+
+	/// Quadratic drag in 1/length. Allows fast entries to be slowed much harder.
+	float quadraticDrag;
+
+	/// Angular drag rate in 1/s.
+	float angularDrag;
+
+	/// The velocity of the fluid current in world space.
+	b3Vec3 currentVelocity;
+
+	/// Used internally to detect a valid definition. DO NOT SET.
+	int internalValue;
+} b3FluidDef;
+
+/// Use this to initialize your fluid definition
+/// @ingroup shape
+B3_API b3FluidDef b3DefaultFluidDef( void );
 
 /// Profiling data. Times are in milliseconds.
 /// @ingroup world

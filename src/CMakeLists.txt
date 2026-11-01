@@ -34,6 +34,8 @@ set(BOX3D_SOURCE_FILES
 	distance.c
 	dynamic_tree.c
 	dynamic_tree.h
+	fluid.c
+	fluid.h
 	height_field.c
 	hull.c
 	hull.h

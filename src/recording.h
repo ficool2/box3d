@@ -48,7 +48,8 @@ typedef struct b3World b3World;
 
 // Major recording version is bumped when writers change.
 // Major version 6 widened the body def with the safety factor.
-#define B3_REC_VERSION_MAJOR 6
+// Major version 7 added the fluid scales to the shape def.
+#define B3_REC_VERSION_MAJOR 7
 
 // Minor tracks op-stream additions that keep the 48 byte header shape.
 // Minor version 7 made the contact body sim locators persistent
@@ -187,6 +188,7 @@ typedef b3JointId b3RecCType_JOINTID;
 typedef b3BodyDef b3RecCType_BODYDEF;
 typedef b3ShapeDef b3RecCType_SHAPEDEF;
 typedef b3ExplosionDef b3RecCType_EXPLOSIONDEF;
+typedef b3FluidDef b3RecCType_FLUIDDEF;
 typedef b3ParallelJointDef b3RecCType_PARALLELJOINTDEF;
 typedef b3DistanceJointDef b3RecCType_DISTANCEJOINTDEF;
 typedef b3FilterJointDef b3RecCType_FILTERJOINTDEF;
@@ -258,6 +260,7 @@ void b3RecW_MATERIAL( b3RecBuffer* buf, b3SurfaceMaterial v );
 void b3RecW_MASSDATA( b3RecBuffer* buf, b3MassData v );
 void b3RecW_LOCKS( b3RecBuffer* buf, b3MotionLocks v );
 void b3RecW_EXPLOSIONDEF( b3RecBuffer* buf, b3ExplosionDef v );
+void b3RecW_FLUIDDEF( b3RecBuffer* buf, b3FluidDef v );
 void b3RecW_BODYDEF( b3RecBuffer* buf, b3BodyDef v );
 void b3RecW_SHAPEDEF( b3RecBuffer* buf, b3ShapeDef v );
 void b3RecW_PARALLELJOINTDEF( b3RecBuffer* buf, b3ParallelJointDef v );

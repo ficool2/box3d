@@ -77,10 +77,26 @@ b3ShapeDef b3DefaultShapeDef( void )
 	// density of water
 	def.density = 1000.0f / ( lengthUnits * lengthUnits * lengthUnits );
 	def.explosionScale = 1.0f;
+	def.buoyancyScale = 1.0f;
+	def.fluidDragScale = 1.0f;
 	def.filter = b3DefaultFilter();
 	def.updateBodyMass = true;
 	def.invokeContactCreation = true;
 	def.enableSpeculativeContact = true;
+	def.internalValue = B3_SECRET_COOKIE;
+	return def;
+}
+
+b3FluidDef b3DefaultFluidDef( void )
+{
+	float lengthUnits = b3GetLengthUnitsPerMeter();
+
+	b3FluidDef def = { 0 };
+	def.surface = (b3Plane){ { 0.0f, 0.0f, 1.0f }, 0.0f };
+	// water
+	def.density = 1000.0f / ( lengthUnits * lengthUnits * lengthUnits );
+	def.linearDrag = 1.0f;
+	def.angularDrag = 1.0f;
 	def.internalValue = B3_SECRET_COOKIE;
 	return def;
 }

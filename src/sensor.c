@@ -113,8 +113,22 @@ static bool b3SensorQueryCallback( int proxyId, uint64_t userData, void* context
 		return true;
 	}
 
-	// Are sensor events enabled on the other shape?
-	if ( ( otherShape->flags & b3_enableSensorEvents ) == 0 )
+	// Events need both sides to opt in.
+	b3Sensor* sensor = queryContext->sensor;
+	bool reportEvent = ( sensorShape->flags & b3_enableSensorEvents ) && ( otherShape->flags & b3_enableSensorEvents );
+
+	// Fluids also take dynamic shapes that want buoyancy or drag.
+	bool fluidVisitor = false;
+	if ( reportEvent == false && sensor->fluid.enabled )
+	{
+		if ( otherShape->buoyancyScale != 0.0f || otherShape->fluidDragScale != 0.0f  )
+		{
+			b3Body* otherBody = b3Array_Get( world->bodies, otherShape->bodyId );
+			fluidVisitor = otherBody->type == b3_dynamicBody;
+		}
+	}
+
+	if ( reportEvent == false && fluidVisitor == false )
 	{
 		return true;
 	}
@@ -156,8 +170,7 @@ static bool b3SensorQueryCallback( int proxyId, uint64_t userData, void* context
 	}
 
 	// Record the overlap
-	b3Sensor* sensor = queryContext->sensor;
-	b3Visitor* shapeRef = b3Array_Emplace( sensor->overlaps2 );
+	b3Visitor* shapeRef = reportEvent ? b3Array_Emplace( sensor->overlaps2 ) : b3Array_Emplace( sensor->fluidVisitors );
 	shapeRef->shapeId = shapeId;
 	shapeRef->generation = otherShape->generation;
 
@@ -198,15 +211,21 @@ static void b3SensorTask( int startIndex, int endIndex, int workerIndex, void* c
 		sensor->overlaps1 = sensor->overlaps2;
 		sensor->overlaps2 = temp;
 		b3Array_Clear( sensor->overlaps2 );
+		b3Array_Clear( sensor->fluidVisitors );
+
+		bool sensorEvents = ( sensorShape->flags & b3_enableSensorEvents ) != 0;
 
 		// Append sensor hits
-		b3Array_Append( sensor->overlaps2, sensor->hits.data, sensor->hits.count );
+		if ( sensorEvents )
+		{
+			b3Array_Append( sensor->overlaps2, sensor->hits.data, sensor->hits.count );
+		}
 
 		// Clear the hits
 		b3Array_Clear( sensor->hits );
 
 		b3Body* body = b3Array_Get( world->bodies, sensorShape->bodyId );
-		if ( body->setIndex == b3_disabledSet || ( sensorShape->flags & b3_enableSensorEvents ) == 0 )
+		if ( body->setIndex == b3_disabledSet || ( sensorEvents == false && sensor->fluid.enabled == false ) )
 		{
 			if ( sensor->overlaps1.count != 0 )
 			{
@@ -236,6 +255,7 @@ static void b3SensorTask( int startIndex, int endIndex, int workerIndex, void* c
 
 		// Sort the overlaps to enable finding begin and end events.
 		qsort( sensor->overlaps2.data, sensor->overlaps2.count, sizeof( b3Visitor ), b3CompareVisitors );
+		qsort( sensor->fluidVisitors.data, sensor->fluidVisitors.count, sizeof( b3Visitor ), b3CompareVisitors );
 
 		// Remove duplicates from overlaps2 (sorted). Duplicates are possible due to the hit events appended earlier.
 		int uniqueCount = 0;
@@ -439,6 +459,7 @@ void b3DestroySensor( b3World* world, b3Shape* sensorShape )
 	b3Array_Destroy( sensor->hits );
 	b3Array_Destroy( sensor->overlaps1 );
 	b3Array_Destroy( sensor->overlaps2 );
+	b3Array_Destroy( sensor->fluidVisitors );
 
 	int movedIndex = b3Array_RemoveSwap( world->sensors, sensorShape->sensorIndex );
 	if ( movedIndex != B3_NULL_INDEX )

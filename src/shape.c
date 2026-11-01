@@ -16,7 +16,7 @@
 
 #include "box3d/box3d.h"
 
-static b3Shape* b3GetShape( b3World* world, b3ShapeId shapeId )
+b3Shape* b3GetShape( b3World* world, b3ShapeId shapeId )
 {
 	int id = shapeId.index1 - 1;
 	b3Shape* shape = b3Array_Get( world->shapes, id );
@@ -168,6 +168,8 @@ static b3Shape* b3CreateShapeInternal( b3World* world, b3Body* body, b3WorldTran
 	shape->type = shapeType;
 	shape->density = def->density;
 	shape->explosionScale = def->explosionScale;
+	shape->buoyancyScale = def->buoyancyScale;
+	shape->fluidDragScale = def->fluidDragScale;
 	shape->filter = def->filter;
 	shape->userData = def->userData;
 	shape->userShape = NULL;
@@ -238,7 +240,9 @@ static b3Shape* b3CreateShapeInternal( b3World* world, b3Body* body, b3WorldTran
 		b3Array_CreateN( sensor->hits, 4 );
 		b3Array_CreateN( sensor->overlaps1, 16 );
 		b3Array_CreateN( sensor->overlaps2, 16 );
+		b3Array_Create( sensor->fluidVisitors );
 		sensor->shapeId = shapeId;
+		sensor->fluid = (b3Fluid){ 0 };
 	}
 	else
 	{
@@ -255,6 +259,8 @@ static b3ShapeId b3CreateShape( b3BodyId bodyId, const b3ShapeDef* def, const vo
 {
 	B3_CHECK_DEF( def );
 	B3_ASSERT( b3IsValidFloat( def->density ) && def->density >= 0.0f );
+	B3_ASSERT( b3IsValidFloat( def->buoyancyScale ) && def->buoyancyScale >= 0.0f );
+	B3_ASSERT( b3IsValidFloat( def->fluidDragScale ) && def->fluidDragScale >= 0.0f );
 	B3_ASSERT( b3IsValidFloat( def->baseMaterial.friction ) && def->baseMaterial.friction >= 0.0f );
 	B3_ASSERT( b3IsValidFloat( def->baseMaterial.restitution ) && def->baseMaterial.restitution >= 0.0f );
 
@@ -552,6 +558,7 @@ static void b3DestroyShapeInternal( b3World* world, b3Shape* shape, b3Body* body
 		b3Array_Destroy( sensor->hits );
 		b3Array_Destroy( sensor->overlaps1 );
 		b3Array_Destroy( sensor->overlaps2 );
+		b3Array_Destroy( sensor->fluidVisitors );
 
 		int movedIndex = b3Array_RemoveSwap( world->sensors, shape->sensorIndex );
 		if ( movedIndex != B3_NULL_INDEX )

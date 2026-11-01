@@ -1116,6 +1116,46 @@ B3_API int b3Shape_GetSensorCapacity( b3ShapeId shapeId );
 /// @warning overlaps may contain destroyed shapes so use b3Shape_IsValid to confirm each overlap
 B3_API int b3Shape_GetSensorData( b3ShapeId shapeId, b3ShapeId* visitorIds, int capacity );
 
+/// Turn a sensor shape into a fluid, or update the fluid settings of a sensor that already is one.
+/// Changing a fluid wakes the bodies in it.
+/// @see b3FluidDef
+B3_API void b3Shape_EnableFluid( b3ShapeId shapeId, const b3FluidDef* def );
+
+/// Stop a sensor shape from acting as a fluid
+B3_API void b3Shape_DisableFluid( b3ShapeId shapeId );
+
+/// Returns true if the shape is a fluid sensor
+B3_API bool b3Shape_IsFluid( b3ShapeId shapeId );
+
+/// Get the fluid settings of a fluid sensor
+B3_API b3FluidDef b3Shape_GetFluid( b3ShapeId shapeId );
+
+/// Set the fluid surface plane in the local frame of the sensor body
+B3_API void b3Shape_SetFluidSurface( b3ShapeId shapeId, b3Plane surface );
+
+/// Set the fluid current velocity in world space
+B3_API void b3Shape_SetFluidCurrent( b3ShapeId shapeId, b3Vec3 currentVelocity );
+
+/// Set the buoyancy scale of a shape. @see b3ShapeDef::buoyancyScale
+B3_API void b3Shape_SetBuoyancyScale( b3ShapeId shapeId, float buoyancyScale );
+
+/// Get the buoyancy scale of a shape
+B3_API float b3Shape_GetBuoyancyScale( b3ShapeId shapeId );
+
+/// Set the fluid drag scale of a shape. @see b3ShapeDef::fluidDragScale
+B3_API void b3Shape_SetFluidDragScale( b3ShapeId shapeId, float fluidDragScale );
+
+/// Get the fluid drag scale of a shape
+B3_API float b3Shape_GetFluidDragScale( b3ShapeId shapeId );
+
+/// Compute the volume and centroid of the part of a shape submerged in a fluid sensor.
+/// Returns false if the shapes don't overlap or a shape is not supported.
+/// @param shapeId a convex shape
+/// @param fluidShapeId a fluid sensor shape
+/// @param volume the submerged volume
+/// @param centroid the world centroid of the submerged volume (center of buoyancy). May be NULL.
+B3_API bool b3Shape_GetSubmergedVolume( b3ShapeId shapeId, b3ShapeId fluidShapeId, float* volume, b3Pos* centroid );
+
 /// Get the current world AABB
 B3_API b3AABB b3Shape_GetAABB( b3ShapeId shapeId );
 

@@ -35,6 +35,8 @@ typedef struct b3Shape
 	b3ShapeType type;
 	float density;
 	float explosionScale;
+	float buoyancyScale;
+	float fluidDragScale;
 	float aabbMargin;
 
 	b3AABB aabb;
@@ -73,6 +75,9 @@ static inline b3SurfaceMaterial* b3GetShapeMaterials( const b3Shape* shape )
 {
 	return shape->materials != NULL ? shape->materials : (b3SurfaceMaterial*)&shape->material;
 }
+
+// Get a validated shape from a world using an id.
+b3Shape* b3GetShape( b3World* world, b3ShapeId shapeId );
 
 void b3CreateShapeProxy( b3World* world, b3Shape* shape, b3BodyType type, b3WorldTransform transform, bool forcePairCreation );
 void b3DestroyShapeProxy( b3Shape* shape, b3BroadPhase* bp );

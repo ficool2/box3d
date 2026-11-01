@@ -6,6 +6,8 @@
 #include "bitset.h"
 #include "container.h"
 
+#include "box3d/math_functions.h"
+
 typedef struct b3Shape b3Shape;
 typedef struct b3World b3World;
 
@@ -24,11 +26,27 @@ typedef struct b3Visitor
 
 b3DeclareArray( b3Visitor );
 
+typedef struct b3Fluid
+{
+	b3Plane surface;
+	b3Vec3 currentVelocity;
+	float density;
+	float linearDrag;
+	float quadraticDrag;
+	float angularDrag;
+	bool enabled;
+	bool wakeVisitors;
+} b3Fluid;
+
 typedef struct b3Sensor
 {
 	b3Array( b3Visitor ) hits;
 	b3Array( b3Visitor ) overlaps1;
 	b3Array( b3Visitor ) overlaps2;
+
+	// Fluid visitors that aren't in overlaps2 because one side has sensor events off. No events.
+	b3Array( b3Visitor ) fluidVisitors;
+	b3Fluid fluid;
 	int shapeId;
 } b3Sensor;
 

@@ -322,8 +322,10 @@ _Static_assert( sizeof( void* ) != 8 || sizeof( b3ExplosionDef ) == 32 || sizeof
 				"b3ExplosionDef changed: update b3RecW_EXPLOSIONDEF and b3RecR_EXPLOSIONDEF together" );
 _Static_assert( sizeof( void* ) != 8 || sizeof( b3BodyDef ) == 112 || sizeof( b3BodyDef ) == 128,
 				"b3BodyDef changed: update b3RecW_BODYDEF and b3RecR_BODYDEF together" );
-_Static_assert( sizeof( void* ) != 8 || sizeof( b3ShapeDef ) == 120,
+_Static_assert( sizeof( void* ) != 8 || sizeof( b3ShapeDef ) == 128,
 				"b3ShapeDef changed: update b3RecW_SHAPEDEF and b3RecR_SHAPEDEF together" );
+_Static_assert( sizeof( void* ) != 8 || sizeof( b3FluidDef ) == 48,
+				"b3FluidDef changed: update b3RecW_FLUIDDEF and b3RecR_FLUIDDEF together" );
 _Static_assert( sizeof( void* ) != 8 || sizeof( b3ParallelJointDef ) == 128,
 				"b3ParallelJointDef changed: update b3RecW_PARALLELJOINTDEF and its reader together" );
 _Static_assert( sizeof( void* ) != 8 || sizeof( b3DistanceJointDef ) == 160,
@@ -356,6 +358,18 @@ void b3RecW_EXPLOSIONDEF( b3RecBuffer* buf, b3ExplosionDef v )
 	b3RecW_F32( buf, v.radius );
 	b3RecW_F32( buf, v.falloff );
 	b3RecW_F32( buf, v.impulsePerArea );
+}
+
+void b3RecW_FLUIDDEF( b3RecBuffer* buf, b3FluidDef v )
+{
+	b3RecW_VEC3( buf, v.surface.normal );
+	b3RecW_F32( buf, v.surface.offset );
+	b3RecW_F32( buf, v.density );
+	b3RecW_F32( buf, v.linearDrag );
+	b3RecW_F32( buf, v.quadraticDrag );
+	b3RecW_F32( buf, v.angularDrag );
+	b3RecW_VEC3( buf, v.currentVelocity );
+	// internalValue omitted
 }
 
 void b3RecW_BODYDEF( b3RecBuffer* buf, b3BodyDef v )
@@ -400,6 +414,8 @@ void b3RecW_SHAPEDEF( b3RecBuffer* buf, b3ShapeDef v )
 	b3RecW_MATERIAL( buf, v.baseMaterial );
 	b3RecW_F32( buf, v.density );
 	b3RecW_F32( buf, v.explosionScale );
+	b3RecW_F32( buf, v.buoyancyScale );
+	b3RecW_F32( buf, v.fluidDragScale );
 	b3RecW_FILTER( buf, v.filter );
 	b3RecW_BOOL( buf, v.enableCustomFiltering );
 	b3RecW_BOOL( buf, v.isSensor );

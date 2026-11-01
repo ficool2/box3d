@@ -163,6 +163,33 @@ static void b3SnapW_Bytes( b3RecBuffer* buf, const void* src, int n )
 	b3RecBufAppend( buf, src, n );
 }
 
+static void b3SnapW_Fluid( b3RecBuffer* buf, const b3Fluid* fluid )
+{
+	b3SnapW_Bytes( buf, &fluid->surface.normal, sizeof( b3Vec3 ) );
+	b3SnapW_Bytes( buf, &fluid->surface.offset, sizeof( float ) );
+	b3SnapW_Bytes( buf, &fluid->currentVelocity, sizeof( b3Vec3 ) );
+	b3SnapW_Bytes( buf, &fluid->density, sizeof( float ) );
+	b3SnapW_Bytes( buf, &fluid->linearDrag, sizeof( float ) );
+	b3SnapW_Bytes( buf, &fluid->quadraticDrag, sizeof( float ) );
+	b3SnapW_Bytes( buf, &fluid->angularDrag, sizeof( float ) );
+	b3SnapW_U32( buf, fluid->enabled ? 1u : 0u );
+	b3SnapW_U32( buf, fluid->wakeVisitors ? 1u : 0u );
+}
+
+static void b3SnapR_Fluid( b3SnapReader* r, b3Fluid* fluid )
+{
+	*fluid = (b3Fluid){ 0 };
+	b3SnapR_Bytes( r, &fluid->surface.normal, sizeof( b3Vec3 ) );
+	b3SnapR_Bytes( r, &fluid->surface.offset, sizeof( float ) );
+	b3SnapR_Bytes( r, &fluid->currentVelocity, sizeof( b3Vec3 ) );
+	b3SnapR_Bytes( r, &fluid->density, sizeof( float ) );
+	b3SnapR_Bytes( r, &fluid->linearDrag, sizeof( float ) );
+	b3SnapR_Bytes( r, &fluid->quadraticDrag, sizeof( float ) );
+	b3SnapR_Bytes( r, &fluid->angularDrag, sizeof( float ) );
+	fluid->enabled = b3SnapR_U32( r ) != 0;
+	fluid->wakeVisitors = b3SnapR_U32( r ) != 0;
+}
+
 // Bounds check before allocating from image
 static bool b3SnapCheckCount( const b3SnapReader* r, int count, int memSize, int minStreamBytes )
 {
@@ -1017,6 +1044,7 @@ static void b3FreeLiveSimElements( b3World* world )
 		b3Array_Destroy( sensor->hits );
 		b3Array_Destroy( sensor->overlaps1 );
 		b3Array_Destroy( sensor->overlaps2 );
+		b3Array_Destroy( sensor->fluidVisitors );
 	}
 
 	// Island heap: inner arrays
@@ -1106,6 +1134,8 @@ int b3SerializeWorld( b3World* world, b3RecBuffer* buf, b3Recording* rec )
 			b3SerPodArray( buf, s->hits );
 			b3SerPodArray( buf, s->overlaps1 );
 			b3SerPodArray( buf, s->overlaps2 );
+			b3SerPodArray( buf, s->fluidVisitors );
+			b3SnapW_Fluid( buf, &s->fluid );
 		}
 	}
 
@@ -1300,7 +1330,7 @@ bool b3DeserializeIntoShell( const uint8_t* data, int size, b3World* world, b3Re
 		b3Array_Create( world->sensors );
 
 		int sensorCount = b3SnapR_I32( r );
-		if ( r->ok && b3SnapCheckCount( r, sensorCount, (int)sizeof( b3Sensor ), 4 * (int)sizeof( int ) ) == false )
+		if ( r->ok && b3SnapCheckCount( r, sensorCount, (int)sizeof( b3Sensor ), 5 * (int)sizeof( int ) ) == false )
 		{
 			r->ok = false;
 		}
@@ -1317,9 +1347,12 @@ bool b3DeserializeIntoShell( const uint8_t* data, int size, b3World* world, b3Re
 			b3Array_Create( s->hits );
 			b3Array_Create( s->overlaps1 );
 			b3Array_Create( s->overlaps2 );
+			b3Array_Create( s->fluidVisitors );
 			b3DesPodArray( r, s->hits );
 			b3DesPodArray( r, s->overlaps1 );
 			b3DesPodArray( r, s->overlaps2 );
+			b3DesPodArray( r, s->fluidVisitors );
+			b3SnapR_Fluid( r, &s->fluid );
 		}
 	}
 

@@ -405,6 +405,19 @@ const char* b3RecR_STR( b3RecReader* rdr )
 // Def readers: start from b3Default*Def() then overlay each serialized field
 // in the exact order the writer produced them.
 
+b3FluidDef b3RecR_FLUIDDEF( b3RecReader* rdr )
+{
+	b3FluidDef def = b3DefaultFluidDef();
+	def.surface.normal = b3RecR_VEC3( rdr );
+	def.surface.offset = b3RecR_F32( rdr );
+	def.density = b3RecR_F32( rdr );
+	def.linearDrag = b3RecR_F32( rdr );
+	def.quadraticDrag = b3RecR_F32( rdr );
+	def.angularDrag = b3RecR_F32( rdr );
+	def.currentVelocity = b3RecR_VEC3( rdr );
+	return def;
+}
+
 b3ExplosionDef b3RecR_EXPLOSIONDEF( b3RecReader* rdr )
 {
 	b3ExplosionDef def = b3DefaultExplosionDef();
@@ -477,6 +490,8 @@ b3ShapeDef b3RecR_SHAPEDEF( b3RecReader* rdr )
 	def.baseMaterial = b3RecR_MATERIAL( rdr );
 	def.density = b3RecR_F32( rdr );
 	def.explosionScale = b3RecR_F32( rdr );
+	def.buoyancyScale = b3RecR_F32( rdr );
+	def.fluidDragScale = b3RecR_F32( rdr );
 	def.filter = b3RecR_FILTER( rdr );
 	def.enableCustomFiltering = b3RecR_BOOL( rdr );
 	def.isSensor = b3RecR_BOOL( rdr );
@@ -1125,6 +1140,36 @@ static void b3RecDispatch_ShapeSetName( const b3RecArgs_ShapeSetName* a, b3RecRe
 static void b3RecDispatch_ShapeSetDensity( const b3RecArgs_ShapeSetDensity* a, b3RecReader* rdr )
 {
 	b3Shape_SetDensity( b3RecMakeShapeId( rdr, a->shape ), a->density, a->updateBodyMass );
+}
+
+static void b3RecDispatch_ShapeEnableFluid( const b3RecArgs_ShapeEnableFluid* a, b3RecReader* rdr )
+{
+	b3Shape_EnableFluid( b3RecMakeShapeId( rdr, a->shape ), &a->def );
+}
+
+static void b3RecDispatch_ShapeDisableFluid( const b3RecArgs_ShapeDisableFluid* a, b3RecReader* rdr )
+{
+	b3Shape_DisableFluid( b3RecMakeShapeId( rdr, a->shape ) );
+}
+
+static void b3RecDispatch_ShapeSetFluidSurface( const b3RecArgs_ShapeSetFluidSurface* a, b3RecReader* rdr )
+{
+	b3Shape_SetFluidSurface( b3RecMakeShapeId( rdr, a->shape ), (b3Plane){ a->normal, a->offset } );
+}
+
+static void b3RecDispatch_ShapeSetFluidCurrent( const b3RecArgs_ShapeSetFluidCurrent* a, b3RecReader* rdr )
+{
+	b3Shape_SetFluidCurrent( b3RecMakeShapeId( rdr, a->shape ), a->currentVelocity );
+}
+
+static void b3RecDispatch_ShapeSetBuoyancyScale( const b3RecArgs_ShapeSetBuoyancyScale* a, b3RecReader* rdr )
+{
+	b3Shape_SetBuoyancyScale( b3RecMakeShapeId( rdr, a->shape ), a->buoyancyScale );
+}
+
+static void b3RecDispatch_ShapeSetFluidDragScale( const b3RecArgs_ShapeSetFluidDragScale* a, b3RecReader* rdr )
+{
+	b3Shape_SetFluidDragScale( b3RecMakeShapeId( rdr, a->shape ), a->fluidDragScale );
 }
 
 static void b3RecDispatch_ShapeSetFriction( const b3RecArgs_ShapeSetFriction* a, b3RecReader* rdr )
