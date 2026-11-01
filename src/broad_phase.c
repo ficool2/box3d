@@ -24,6 +24,7 @@ void b3CreateBroadPhase( b3BroadPhase* bp, const b3Capacity* capacity )
 {
 	_Static_assert( b3_bodyTypeCount == 3, "must be three body types" );
 
+	bp->staticSensorVisitorCount = 0;
 	bp->pairSet = b3CreateSet( b3MaxInt( 32, 2 * capacity->contactCount ) );
 
 	int staticCapacity = b3MaxInt( 16, capacity->staticShapeCount );

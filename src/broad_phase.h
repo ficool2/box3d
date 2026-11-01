@@ -32,6 +32,9 @@ typedef struct b3BroadPhase
 	// Tracks shape pairs that have a b3Contact
 	// todo pairSet can grow quite large on the first time step and remain large
 	b3HashSet pairSet;
+
+	// Static proxies whose shape has sensor events. Sensors skip the static tree when this is zero.
+	int staticSensorVisitorCount;
 } b3BroadPhase;
 
 void b3CreateBroadPhase( b3BroadPhase* bp, const b3Capacity* capacity );

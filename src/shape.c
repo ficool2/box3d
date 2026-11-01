@@ -214,6 +214,22 @@ static b3Shape* b3CreateShapeInternal( b3World* world, b3Body* body, b3WorldTran
 		shape->materials = NULL;
 	}
 
+	if ( def->isSensor )
+	{
+		shape->sensorIndex = world->sensors.count;
+		b3Sensor* sensor = b3Array_Emplace( world->sensors );
+		b3Array_CreateN( sensor->hits, 4 );
+		b3Array_CreateN( sensor->overlaps1, 16 );
+		b3Array_CreateN( sensor->overlaps2, 16 );
+		b3Array_Create( sensor->fluidVisitors );
+		sensor->shapeId = shapeId;
+		sensor->fluid = (b3Fluid){ 0 };
+	}
+	else
+	{
+		shape->sensorIndex = B3_NULL_INDEX;
+	}
+
 	if ( body->setIndex != b3_disabledSet )
 	{
 		b3BodyType proxyType = body->type;
@@ -232,22 +248,6 @@ static b3Shape* b3CreateShapeInternal( b3World* world, b3Body* body, b3WorldTran
 	shape->nextShapeId = body->headShapeId;
 	body->headShapeId = shapeId;
 	body->shapeCount += 1;
-
-	if ( def->isSensor )
-	{
-		shape->sensorIndex = world->sensors.count;
-		b3Sensor* sensor = b3Array_Emplace( world->sensors );
-		b3Array_CreateN( sensor->hits, 4 );
-		b3Array_CreateN( sensor->overlaps1, 16 );
-		b3Array_CreateN( sensor->overlaps2, 16 );
-		b3Array_Create( sensor->fluidVisitors );
-		sensor->shapeId = shapeId;
-		sensor->fluid = (b3Fluid){ 0 };
-	}
-	else
-	{
-		shape->sensorIndex = B3_NULL_INDEX;
-	}
 
 	b3ValidateSolverSets( world );
 
@@ -1025,6 +1025,29 @@ int b3CollideMover( b3PlaneResult* planes, int planeCapacity, const b3Shape* sha
 	return planeCount;
 }
 
+static void b3UpdateStaticSensorVisitor( b3BroadPhase* bp, b3Shape* shape )
+{
+	bool counted = ( shape->flags & b3_staticSensorVisitor ) != 0;
+	bool visitor = shape->proxyKey != B3_NULL_INDEX && B3_PROXY_TYPE( shape->proxyKey ) == b3_staticBody &&
+				   shape->sensorIndex == B3_NULL_INDEX && ( shape->flags & b3_enableSensorEvents ) != 0;
+	if ( counted == visitor )
+	{
+		return;
+	}
+
+	if ( visitor )
+	{
+		shape->flags |= b3_staticSensorVisitor;
+		bp->staticSensorVisitorCount += 1;
+	}
+	else
+	{
+		shape->flags &= ~b3_staticSensorVisitor;
+		bp->staticSensorVisitorCount -= 1;
+		B3_ASSERT( bp->staticSensorVisitorCount >= 0 );
+	}
+}
+
 void b3CreateShapeProxy( b3World* world, b3Shape* shape, b3BodyType type, b3WorldTransform transform, bool forcePairCreation )
 {
 	B3_ASSERT( shape->proxyKey == B3_NULL_INDEX );
@@ -1036,6 +1059,7 @@ void b3CreateShapeProxy( b3World* world, b3Shape* shape, b3BodyType type, b3Worl
 	shape->proxyKey = b3BroadPhase_CreateProxy( &world->broadPhase, type, *fatAABB, shape->filter.categoryBits, shape->id,
 												forcePairCreation );
 	B3_ASSERT( B3_PROXY_TYPE( shape->proxyKey ) < b3_bodyTypeCount );
+	b3UpdateStaticSensorVisitor( &world->broadPhase, shape );
 }
 
 void b3DestroyShapeProxy( b3Shape* shape, b3BroadPhase* bp )
@@ -1044,6 +1068,7 @@ void b3DestroyShapeProxy( b3Shape* shape, b3BroadPhase* bp )
 	{
 		b3BroadPhase_DestroyProxy( bp, shape->proxyKey );
 		shape->proxyKey = B3_NULL_INDEX;
+		b3UpdateStaticSensorVisitor( bp, shape );
 	}
 }
 
@@ -1470,6 +1495,7 @@ void b3Shape_EnableSensorEvents( b3ShapeId shapeId, bool flag )
 
 	b3Shape* shape = b3GetShape( world, shapeId );
 	shape->flags = flag ? shape->flags | b3_enableSensorEvents : shape->flags & ~b3_enableSensorEvents;
+	b3UpdateStaticSensorVisitor( &world->broadPhase, shape );
 }
 
 bool b3Shape_AreSensorEventsEnabled( b3ShapeId shapeId )

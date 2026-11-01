@@ -249,7 +249,10 @@ static void b3SensorTask( int startIndex, int endIndex, int workerIndex, void* c
 		b3AABB queryBounds = sensorShape->aabb;
 
 		// Query all trees
-		b3DynamicTree_Query( trees + 0, queryBounds, sensorShape->filter.maskBits, false, b3SensorQueryCallback, &queryContext );
+		if ( world->broadPhase.staticSensorVisitorCount > 0 )
+		{
+			b3DynamicTree_Query( trees + 0, queryBounds, sensorShape->filter.maskBits, false, b3SensorQueryCallback, &queryContext );
+		}
 		b3DynamicTree_Query( trees + 1, queryBounds, sensorShape->filter.maskBits, false, b3SensorQueryCallback, &queryContext );
 		b3DynamicTree_Query( trees + 2, queryBounds, sensorShape->filter.maskBits, false, b3SensorQueryCallback, &queryContext );
 
